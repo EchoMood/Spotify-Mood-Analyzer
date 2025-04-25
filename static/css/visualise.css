@@ -1,305 +1,319 @@
 /* ==========================================================================
-   Base Styles
-   ========================================================================== */
-   * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  Base Styles
+  ========================================================================== */
+  * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(180deg, #1c1c66 0%, #3b0465 100%);
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+    Background Section
+    ========================================================================== */
+.background {
+  text-align: center;
+  padding: 60px 20px;
+  position: relative;
+}
+
+/* Page title */
+.page-title {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+/* Subtitle */
+.subheading {
+  font-size: 1rem;
+  color: #cccccc;
+}
+
+/* ==========================================================================
+    Mood Cards Section
+    ========================================================================== */
+.mood-cards-container {
+  padding: 60px 20px;
+}
+
+.section-title {
+  font-size: 1.75rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Horizontal scroll area */
+.mood-cards-scroll {
+  justify-content: flex-start;
+  /* justify-content: center; */
+  display: flex;
+  gap: 72px;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-left: 42px;
+  padding-bottom: 20px;
+}
+
+/* Custom scrollbar */
+.mood-cards-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+.mood-cards-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+.mood-cards-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+    Mood Card Styles
+    ========================================================================== */
+.mood-card {
+  flex: 0 0 325px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  position: relative;
+  animation: floatCard 3s ease-in-out infinite;
+}
+
+@keyframes floatCard {
+  0%, 100% {
+      transform: translateY(0px) rotateX(0deg);
   }
-  
-  body {
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(180deg, #0a0a2a 0%, #1c0130 100%);
-    color: #ffffff;
-    overflow-x: hidden;
+  50% {
+      transform: translateY(-6px) rotateX(3deg);
   }
-  
-  /* ==========================================================================
-     Background Section
-     ========================================================================== */
-  .background {
-    text-align: center;
-    padding: 60px 20px;
-    position: relative;
-  }
-  
-  /* Page title */
-  .page-title {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-  }
-  
-  /* Subtitle */
-  .subheading {
-    font-size: 1rem;
-    color: #cccccc;
-  }
-  
-  /* ==========================================================================
-     Mood Cards Section
-     ========================================================================== */
-  .mood-cards-container {
-    padding: 40px 20px;
-  }
-  
-  .section-title {
-    font-size: 1.75rem;
-    margin-bottom: 20px;
-    text-align: center;
-  }
-  
-  /* Horizontal scroll area */
+}
+
+.mood-card:hover {
+  transform: rotateY(8deg) scale(1.05);
+  box-shadow: 0 12px 30px rgba(255, 255, 255, 0.3);
+}
+
+/* Emoji placeholder */
+.emoji {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+/* Mood name */
+.mood-card h3 {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+/* Mood percentage */
+.mood-card p {
+  font-size: 1.45rem;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* Top song */
+.top-song {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.album-cover {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-right: 12px;
+}
+
+.song-info .song-title {
+  font-weight: bold;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.song-info .song-artist {
+  font-size: 0.85rem;
+  color: #dddddd;
+  margin-top: 2px;
+}
+
+/* Time of day */
+.time-of-day {
+  font-size: 0.85rem;
+  color: #cccccc;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* Recommended songs */
+.recommendations {
+  margin-top: 12px;
+}
+
+.recommend-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.recommended-songs {
+  list-style: none;
+  padding: 0;
+}
+
+.recommended-songs .song-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.recommended-songs .song-item .album-cover {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+}
+
+.recommended-songs .song-info .song-title {
+  font-weight: bold;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.recommended-songs .song-info .song-artist {
+  font-size: 0.8rem;
+  color: #aaaaaa;
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+    Personality Card Section
+    ========================================================================== */
+.personality-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border-radius: 16px;
+  margin: 40px 20px;
+  padding: 30px;
+}
+
+.personality-card .section-title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.75rem;
+}
+
+.card-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Left side: MBTI + image */
+.card-layout .left {
+  flex: 1;
+  text-align: center;
+}
+
+.card-layout .left h3 {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+
+.card-layout .left img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Right side: summary + songs */
+.card-layout .right {
+  flex: 2;
+}
+
+.summary {
+  font-size: 1rem;
+  margin-bottom: 16px;
+}
+
+.related-songs {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.related-songs .song-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.related-songs .album-cover {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+}
+
+.related-songs .song-info .song-title {
+  font-weight: bold;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.related-songs .song-info .song-artist {
+  font-size: 0.8rem;
+  color: #cccccc;
+  margin-top: 2px;
+}
+
+/* Share button */
+.share-button {
+  display: inline-block;
+  padding: 10px 24px;
+  background-color: #7b2ff7;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.3s ease;
+}
+
+.share-button:hover {
+  background-color: #5e1ad1;
+}
+
+/* ==========================================================================
+    Responsive Adjustments
+    ========================================================================== */
+@media (max-width: 768px) {
   .mood-cards-scroll {
-    display: flex;
-    gap: 20px;
-    overflow-x: auto;
-    padding-bottom: 20px;
+    gap: 12px;
   }
-  
-  /* Custom scrollbar */
-  .mood-cards-scroll::-webkit-scrollbar {
-    height: 8px;
-  }
-  .mood-cards-scroll::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-  }
-  .mood-cards-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-  }
-  
-  /* ==========================================================================
-     Mood Card Styles
-     ========================================================================== */
   .mood-card {
-    flex: 0 0 280px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 20px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    transition: transform 0.3s ease;
-    position: relative;
+    flex: 0 0 240px;
+    padding: 16px;
   }
-  
-  .mood-card:hover {
-    transform: translateY(-8px) scale(1.03);
-  }
-  
-  /* Emoji placeholder */
-  .emoji {
-    font-size: 2.5rem;
-    text-align: center;
-    margin-bottom: 12px;
-  }
-  
-  /* Mood name */
-  .mood-card h3 {
-    font-size: 1.25rem;
-    margin-bottom: 8px;
-    text-align: center;
-  }
-  
-  /* Mood percentage */
-  .mood-card p {
-    font-size: 0.95rem;
-    margin-bottom: 12px;
-    text-align: center;
-  }
-  
-  /* Top song */
-  .top-song {
-    display: flex;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-  
-  .album-cover {
-    width: 50px;
-    height: 50px;
-    border-radius: 8px;
-    object-fit: cover;
-    margin-right: 12px;
-  }
-  
-  .song-info .song-title {
-    font-weight: bold;
-    margin: 0;
-    font-size: 1rem;
-  }
-  
-  .song-info .song-artist {
-    font-size: 0.85rem;
-    color: #dddddd;
-    margin-top: 2px;
-  }
-  
-  /* Time of day */
-  .time-of-day {
-    font-size: 0.85rem;
-    color: #cccccc;
-    margin-bottom: 12px;
-    text-align: center;
-  }
-  
-  /* Recommended songs */
-  .recommendations {
-    margin-top: 12px;
-  }
-  
-  .recommend-title {
-    font-weight: bold;
-    margin-bottom: 8px;
-  }
-  
-  .recommended-songs {
-    list-style: none;
-    padding: 0;
-  }
-  
-  .recommended-songs .song-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  
-  .recommended-songs .song-item .album-cover {
-    width: 40px;
-    height: 40px;
-    margin-right: 10px;
-  }
-  
-  .recommended-songs .song-info .song-title {
-    font-weight: bold;
-    margin: 0;
-    font-size: 0.95rem;
-  }
-  
-  .recommended-songs .song-info .song-artist {
-    font-size: 0.8rem;
-    color: #aaaaaa;
-    margin-top: 2px;
-  }
-  
-  /* ==========================================================================
-     Personality Card Section
-     ========================================================================== */
-  .personality-card {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(8px);
-    border-radius: 16px;
-    margin: 40px 20px;
-    padding: 30px;
-  }
-  
-  .personality-card .section-title {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 1.75rem;
-  }
-  
   .card-layout {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-    justify-content: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
   }
-  
-  /* Left side: MBTI + image */
-  .card-layout .left {
-    flex: 1;
+  .share-button {
+    width: 100%;
     text-align: center;
   }
-  
-  .card-layout .left h3 {
-    font-size: 1.5rem;
-    margin-bottom: 12px;
-  }
-  
-  .card-layout .left img {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
-  
-  /* Right side: summary + songs */
-  .card-layout .right {
-    flex: 2;
-  }
-  
-  .summary {
-    font-size: 1rem;
-    margin-bottom: 16px;
-  }
-  
-  .related-songs {
-    list-style: none;
-    padding: 0;
-    margin-bottom: 20px;
-  }
-  
-  .related-songs .song-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  .related-songs .album-cover {
-    width: 40px;
-    height: 40px;
-    margin-right: 10px;
-  }
-  
-  .related-songs .song-info .song-title {
-    font-weight: bold;
-    margin: 0;
-    font-size: 0.95rem;
-  }
-  
-  .related-songs .song-info .song-artist {
-    font-size: 0.8rem;
-    color: #cccccc;
-    margin-top: 2px;
-  }
-  
-  /* Share button */
-  .share-button {
-    display: inline-block;
-    padding: 10px 24px;
-    background-color: #7b2ff7;
-    color: #ffffff;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    font-size: 0.95rem;
-    transition: background-color 0.3s ease;
-  }
-  
-  .share-button:hover {
-    background-color: #5e1ad1;
-  }
-  
-  /* ==========================================================================
-     Responsive Adjustments
-     ========================================================================== */
-  @media (max-width: 768px) {
-    .mood-cards-scroll {
-      gap: 12px;
-    }
-    .mood-card {
-      flex: 0 0 240px;
-      padding: 16px;
-    }
-    .card-layout {
-      flex-direction: column;
-      align-items: center;
-    }
-    .share-button {
-      width: 100%;
-      text-align: center;
-    }
-  }
-  
+}

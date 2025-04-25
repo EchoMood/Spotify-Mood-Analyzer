@@ -6,6 +6,9 @@
     <title>Visualisation - Mood & Personality</title>
     <!-- Link to external CSS file -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/visualise.css') }}">
+    <!-- Link to external JS file -->
+    <script src="{{ url_for('static', filename='js/visualise.js') }}"></script>
+
 </head>
 <body>
 
@@ -26,7 +29,7 @@
                 <div class="emoji">😊</div>
 
                 <h3>Happy</h3>
-                <p>You were happy 40% of the time</p>
+                <p>40% of the time</p>
 
                 <!-- Top song associated with this mood -->
                 <div class="top-song">
@@ -76,13 +79,13 @@
                 </div>
             </div>
 
-            <!-- Mood Card #2: Energetic -->
+            <!-- Mood Card #2: Sad -->
             <div class="mood-card">
                 <!-- TODO: Replace this emoji placeholder with a more vivid, AI‑generated illustration that captures the mood -->
                 <div class="emoji">😊</div>
 
-                <h3>Happy</h3>
-                <p>You were happy 40% of the time</p>
+                <h3>Sad</h3>
+                <p>40% of the time</p>
 
                 <!-- Top song associated with this mood -->
                 <div class="top-song">
@@ -132,13 +135,13 @@
                 </div>
             </div>
 
-            <!-- Mood Card #3: Melancholic -->
+            <!-- Mood Card #3: Chill -->
             <div class="mood-card">
                 <!-- TODO: Replace this emoji placeholder with a more vivid, AI‑generated illustration that captures the mood -->
                 <div class="emoji">😊</div>
 
-                <h3>Happy</h3>
-                <p>You were happy 40% of the time</p>
+                <h3>Chill</h3>
+                <p>40% of the time</p>
 
                 <!-- Top song associated with this mood -->
                 <div class="top-song">
@@ -188,13 +191,69 @@
                 </div>
             </div>
 
-            <!-- Mood Card #4: Nostalgic -->
+            <!-- Mood Card #4: Energetic -->
             <div class="mood-card">
                 <!-- TODO: Replace this emoji placeholder with a more vivid, AI‑generated illustration that captures the mood -->
                 <div class="emoji">😊</div>
 
-                <h3>Happy</h3>
-                <p>You were happy 40% of the time</p>
+                <h3>Energetic</h3>
+                <p>40% of the time</p>
+
+                <!-- Top song associated with this mood -->
+                <div class="top-song">
+                    <!-- Left: Album cover -->
+                    <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
+                    <!-- Right: Song details -->
+                    <div class="song-info">
+                        <p class="song-title">Song 1</p>
+                        <p class="song-artist">Artist 1</p>
+                    </div>
+                </div>
+
+                <!-- Time of day this mood appears -->
+                <p class="time-of-day">Usually felt at: Night (8pm-11pm)</p>
+                
+                <!-- Recommended Songs for this mood -->
+                <div class="recommendations">
+                    <p class="recommend-title">Recommended Songs:</p>
+                    <ul class="recommended-songs">
+                        <!-- Song 1 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 1</p>
+                                <p class="song-artist">Artist 1</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 2 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 2</p>
+                                <p class="song-artist">Artist 2</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 3 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 3</p>
+                                <p class="song-artist">Artist 3</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Mood Card #5: Nostalgic -->
+            <div class="mood-card">
+                <!-- TODO: Replace this emoji placeholder with a more vivid, AI‑generated illustration that captures the mood -->
+                <div class="emoji">😊</div>
+
+                <h3>Nostalgic</h3>
+                <p>40% of the time</p>
 
                 <!-- Top song associated with this mood -->
                 <div class="top-song">
