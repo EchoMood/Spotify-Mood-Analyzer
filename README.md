@@ -78,14 +78,21 @@ Spotify-Mood-Analyzer/
 │   └── share.html
 └── static/
     ├── css/
-    │   └── (your CSS files)
+    │   ├── index.css
+    │   ├── visualise.css
+    │   ├── upload.css
+    │   └── share.css
     └── js/
-        └── (your JS files)
+        ├── index.js
+        ├── visualise.js
+        ├── upload.js
+        └── share.js
 ```
 
 - `app.py` — Main Flask application.
 - `templates/` — HTML templates rendered by Flask.
-- `static/` — CSS and JavaScript files.
+- `static/css/` — CSS files, one for each HTML page.
+- `static/js/` — JavaScript files, one for each HTML page. 
 - `requirements.txt` — Python dependencies.
 - `README.md` — Project documentation.
 
