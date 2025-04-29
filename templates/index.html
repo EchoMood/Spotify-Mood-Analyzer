@@ -1,28 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>Spotify Mood Analyzer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A web application that analyzes your Spotify mood.">
-    <meta name="keywords" content="Spotify, Mood, Analyzer, Music, Web Application">
-    <meta name="author" content="Preet Prasad">
-    <!-- Link to external CSS file -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet">
+    <title>Spotify Mood Analysis</title>
+    <link rel="stylesheet" href="../static/styles/styles.css">
 </head>
-
 <body>
-    <section>
-        <div class="box">
-            <div class="circle">
-                <div class="clef">𝄞</div>
+    <div class="container">
+        <header>
+            <h1>Spotify Mood Analysis</h1>
+            <div class="logo-placeholder">
+                <p>3D Logo Coming Soon</p>
             </div>
-        </div>
-        <!-- Link to external JS file -->
-        <script src="{{ url_for('static', filename='js/index.js') }}"></script>
-    </section>
-</body>
+        </header>
 
+        <section class="process-overview">
+              <div class="logo">
+                <div id="multi-logo">
+                  <img src="../static/images/spotify-logo.svg"
+                  alt="My 3D Logo"
+                  class="spotify-logo"
+                  />
+            <div class="steps-container">
+                <div class="step">
+                    <h3>Step 1: Connect Your Spotify Account</h3>
+                    <p>Link your Spotify account to allow us to analyze your listening habits and create a personalized mood profile.</p>
+                </div>
+                <div class="step">
+                    <h3>Step 2: See Your Analysis</h3>
+                    <p>Discover insights about your musical moods and get advice on how to improve your day through music.</p>
+                </div>
+                <button class="get-started-btn">Get Started</button>
+            </div>
+        </section>
+
+        <section class="mood-controls">
+            <h2>Try It Out Below!</h2>
+            <br>
+            <h3>Adjust your mood profile to see the colours change!</h3>
+            <div class="sliders-container">
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Happy</span>
+                        <div class="slider-color happy-color"></div>
+                    </div>
+                    <input type="range" min="0" max="100" value="50" class="mood-slider slider-happy" id="happy-slider">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Sad</span>
+                        <div class="slider-color sad-color"></div>
+                    </div>
+                    <input type="range" min="0" max="100" value="20" class="mood-slider slider-sad" id="sad-slider">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Excited</span>
+                        <div class="slider-color excited-color"></div>
+                    </div>
+                    <input type="range" min="0" max="100" value="40" class="mood-slider slider-excited" id="excited-slider">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Motivated</span>
+                        <div class="slider-color motivated-color"></div>
+                    </div>
+                    <input type="range" min="0" max="100" value="60" class="mood-slider slider-motivated" id="motivated-slider">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Chill</span>
+                        <div class="slider-color chill-color"></div>
+                    </div>
+                    <input type="range" min="0" max="100" value="70" class="mood-slider slider-chill" id="chill-slider">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Angry</span>
+                        <div class="slider-color angry-color"></div>
+                    </div>
+                    <input type="range" min="0" max="100" value="10" class="mood-slider slider-angry" id="angry-slider">
+                </div>
+            </div>
+        </section>
+
+        <section class="music-icons-container" id="music-icons">
+            <!-- Music icons will be dynamically generated here -->
+        </section>
+
+        <footer>
+            <p>Static-Page Spotify Mood Analysis Proof of Concept</p>
+        </footer>
+    </div>
+
+</body>
 </html>
