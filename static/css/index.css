@@ -36,6 +36,25 @@
             padding: 2rem 0;
         }
 
+        header h1 {
+            font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .tagline {
+            font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.5px;
+            font-weight: 400;
+        }
+
         .logo-placeholder {
             width: 200px;
             height: 200px;
@@ -47,6 +66,14 @@
             justify-content: center;
             color: var(--text-secondary);
             font-weight: bold;
+        }
+
+        .intro-text {
+            font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin: 0.5rem 0;
         }
 
         .process-overview {
