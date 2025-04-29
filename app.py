@@ -1,30 +1,37 @@
-# This script sets up a Flask web application with routes for different pages.
-# It includes routes for the home page, a visualisation page, an upload page, and a share page.
-# It also checks for the required packages and prints a message if they are not installed.
+#!/usr/bin/env python3
+"""
+Main application entry point for the Spotify Mood Analysis application.
+"""
+
+import os
+
 try:
-    from flask import Flask, render_template
+    from .config import config
+    from . import create_app
 except ImportError:
-    print("\nMissing required packages! Please run:")
-    print("   pip install -r requirements.txt\n")
-    exit(1)
+    # Allow running as a standalone script during development
+    from config import config
+    from __init__ import create_app
 
-app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+def main():
+    """
+    Run the application using the configuration from environment variables.
+    """
+    try:
+        # Get configuration from environment variable or use default
+        config_name = os.environ.get('FLASK_CONFIG', 'development')
 
-@app.route('/visualise')
-def visualise():
-    return render_template('visualise.html')
+        # Create app with the proper configuration
+        app = create_app(config_name)
 
-@app.route('/upload')
-def upload():
-    return render_template('upload.html')
+        # Run with debugging enabled or disabled based on configuration
+        app.run(debug=app.config['DEBUG'])
+    except ImportError:
+        print("\nMissing required packages! Please run:")
+        print("   pip install -r requirements.txt\n")
+        exit(1)
 
-@app.route('/share')
-def share():
-    return render_template('share.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    main()
