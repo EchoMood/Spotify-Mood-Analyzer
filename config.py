@@ -5,7 +5,8 @@ load_dotenv()
 # Base configuration shared by all environments
 class Config:
     # Flask configuration
-    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(24)
+    SECRET_KEY = os.environ.get('dev_secret_key')
+    print("secret: ", SECRET_KEY)
     DEBUG = False
     TESTING = False
 

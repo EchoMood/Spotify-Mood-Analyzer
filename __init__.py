@@ -13,9 +13,9 @@ from models import User, Track, AudioFeatures
 #from mood_analysis import MoodAnalyzer
 from config import config
 
-
 def create_app(config_name='development'):
     """Create and configure the Flask application."""
+
     app = Flask(__name__)
 
     # Load configuration
@@ -23,7 +23,8 @@ def create_app(config_name='development'):
     app.config.from_object(app_config)
 
     # Secret key for session
-    app.secret_key = app.config.get('SECRET_KEY', 'dev_secret_key')
+    app.secret_key = app.config.get('SECRET_KEY')
+    print("app.secret_key: {}".format(app.secret_key))
 
     # Session configuration for cross-domain (important for ngrok)
     # Only enable in production if using HTTPS
@@ -82,28 +83,33 @@ def create_app(config_name='development'):
 
         # Exchange code for access token using Spotify API utility
         print("Code: ", code)
-        token_data = spotify_api.get_access_token(code)
-        print("Token data: ", token_data)
 
-
-        if not token_data:
-            print("DEBUG no token data, redirecting to index\n")
+        if not code:
+            print("DEBUG no code in header")
             return redirect(url_for('index'))
 
-        # Extract token information
-        access_token = token_data['access_token']
-        refresh_token = token_data['refresh_token']
-        expires_in = token_data['expires_in']
-        token_expiry = datetime.utcnow() + timedelta(seconds=expires_in)
-
-        # Get user profile using Spotify API utility
-        user_data = spotify_api.get_user_profile(access_token)
-        print("User data: ", user_data)
-        session['access_token'] = access_token
+        #TODO: make a call to spotify API
+        # token_data = spotify_api.get_access_token(code)
+        # print("Token data: ", token_data)
 
 
-        if not user_data:
-            return redirect(url_for('index'))
+        # if not token_data:
+        #     print("DEBUG no token data, redirecting to index\n")
+        #     return redirect(url_for('index'))
+        #
+        # # Extract token information
+        # access_token = token_data['access_token']
+        # refresh_token = token_data['refresh_token']
+        # expires_in = token_data['expires_in']
+        # token_expiry = datetime.utcnow() + timedelta(seconds=expires_in)
+        #
+        # # Get user profile using Spotify API utility
+        # user_data = spotify_api.get_user_profile(access_token)
+        # print("User data: ", user_data)
+        # session['access_token'] = access_token
+
+        # if not user_data:
+        #     return redirect(url_for('index'))
 
         #todo: implement logic for database stuff
         # # Save or update user in database
