@@ -1,0 +1,341 @@
+/*--------------------------------------------------------*/
+/* 1. Import Google Font                                  */
+/*--------------------------------------------------------*/
+/* Poppins font gives a clean, modern look               */
+@import url('https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800,900&display=swap');
+
+
+
+/*--------------------------------------------------------*/
+/* 2. CSS Variables (Root)                                */
+/*--------------------------------------------------------*/
+/* Define mood colors and default gradients/text colors   */
+:root {
+    /* Mood color variables */
+    --happy-color: #FFD700;
+    --sad-color: #4169E1;
+    --excited-color: #FF4500;
+    --motivated-color: #32CD32;
+    --chill-color: #9370DB;
+    --angry-color: #DC143C;
+
+    /* Default background gradient */
+    --gradient-primary: #121212;
+    --gradient-secondary: #282828;
+    /* Default text colors */
+    --text-primary: #FFFFFF;
+    --text-secondary: #B3B3B3;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 3. Global Reset & Base Styles                          */
+/*--------------------------------------------------------*/
+/* Remove default spacing and set box-sizing/font         */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 4. Body Layout & Background                            */
+/*--------------------------------------------------------*/
+/* Center the login card and apply a gradient backdrop    */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg,
+            var(--gradient-primary),
+            var(--gradient-secondary));
+    transition: background 0.5s ease;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 5. Background Tile Container                           */
+/*--------------------------------------------------------*/
+/* Create a grid of tiles as the interactive backdrop     */
+.container {
+    display: grid;
+    grid-template-columns: repeat(3, 150px);
+    grid-gap: 4px;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 6. Individual Tile Styling                             */
+/*--------------------------------------------------------*/
+/* Each .box uses its --clr var for base color and sets up a spotlight pseudo-element */
+.container .box {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    background: rgba(45, 45, 45, 1);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 7. Spotlight Effect (::before)                         */
+/*--------------------------------------------------------*/
+/* Uses CSS custom properties --x and --y set by JS        */
+.container .box::before {
+    content: '';
+    position: absolute;
+    top: var(--y);
+    left: var(--x);
+    transform: translate(-50%, -50%);
+    background: radial-gradient(var(--clr), transparent, transparent);
+    width: 300px;
+    height: 300px;
+    transition: 0.5s, top 0.1s, left 0.1s;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 8. Inner Overlay for Depth (::after)                   */
+/*--------------------------------------------------------*/
+/* Semi-transparent overlay inside each tile              */
+.container .box::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: rgba(45, 45, 45, 0.9);
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 9. Login Card Container                                */
+/*--------------------------------------------------------*/
+/* Absolute-positioned, frosted-glass card for the form   */
+.login {
+    position: absolute;
+    width: 450px;
+    height: 900px;
+    padding: 80px 40px;
+    text-align: center;
+    pointer-events: none;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 10. Login Header Styling                               */
+/*--------------------------------------------------------*/
+/* Title inside the login card                           */
+.login h2 {
+    color: #fff;
+    font-size: 2em;
+    margin-bottom: 60px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    pointer-events: all;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 11. Floating-Label Input Wrapper                       */
+/*--------------------------------------------------------*/
+/* Positions label text over the input for animation      */
+.login .inputBox {
+    position: relative;
+    width: 100%;
+    margin-top: 30px;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 12. Input Field Styling                                */
+/*--------------------------------------------------------*/
+/* Semi-transparent, blurred background for inputs        */
+.login .inputBox input {
+    width: 100%;
+    padding: 20px 25px;
+    outline: none;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+    border: 1px solid #000;
+    backdrop-filter: blur(10px);
+    color: #fff;
+    font-size: 1em;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    pointer-events: all;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 13. Floating Label Text                                */
+/*--------------------------------------------------------*/
+/* Animates up when input is focused or valid            */
+.login .inputBox span {
+    position: absolute;
+    left: 0;
+    font-size: 1em;
+    padding: 20px 25px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-radius: 4px;
+    transition: 0.25s;
+    pointer-events: none;
+}
+
+.login .inputBox input:focus~span,
+.login .inputBox input:not(:placeholder-shown)~span {
+    transform: translate(15px, -10px);
+    font-size: 0.75em;
+    background: #fff;
+    color: #222;
+    padding: 2px 5px;
+    border: 1px solid #000;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 14. Submit Button Styling                              */
+/*--------------------------------------------------------*/
+/* Hover state included for visual feedback               */
+.login .inputBox input[type="submit"] {
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: 500;
+    transition: 0.25s;
+}
+
+.login .inputBox input[type="submit"]:hover {
+    background: #0f0;
+    color: #222;
+    border: 1px solid transparent;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 15. Link Group                                         */
+/*--------------------------------------------------------*/
+/* “Forgot Password” and “Sign up” links styling          */
+.group {
+    position: relative;
+    width: 100%;
+    margin-top: 50px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.group a {
+    color: #222;
+    background: #fff;
+    padding: 2px 5px;
+    text-transform: uppercase;
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    pointer-events: all;
+}
+
+.group a:nth-child(2) {
+    background: #f0f;
+    color: #fff;
+    font-weight: 500;
+    box-shadow:
+        0 0 15px #f0f,
+        0 0 30px #f0f,
+        0 0 60px #f0f;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 16. OR Divider                                         */
+/*--------------------------------------------------------*/
+/* Separates form from OAuth buttons                      */
+.or-divider {
+    display: flex;
+    align-items: center;
+    margin: 1.5rem 0;
+    color: #aaa;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #444;
+}
+
+.or-divider span {
+    padding: 0 0.5rem;
+}
+
+
+
+/*--------------------------------------------------------*/
+/* 17. OAuth Button Styles                                */
+/*--------------------------------------------------------*/
+/* Shared: frosted background + blur + hover              */
+.oauth-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: background 0.3s ease;
+}
+
+.oauth-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Spotify accent border */
+.spotify-btn {
+    border-color: #1DB954;
+}
+
+/* Apple accent border + icon invert */
+.apple-btn {
+    border-color: #fff;
+}
+
+.apple-btn .btn-icon {
+    filter: brightness(0) invert(1);
+}
+
+/* Icon inside OAuth buttons */
+.btn-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 0.5rem;
+    object-fit: contain;
+}

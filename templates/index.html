@@ -1,144 +1,172 @@
 <!DOCTYPE html>
+<!--
+  Document type declaration sets standards mode for modern browsers.
+-->
 <html lang="en">
+
 <head>
+    <!--
+    Character encoding ensures proper display of special characters.
+    Viewport tag enables responsive layout on mobile devices.
+  -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotify Mood Analysis</title>
-    <!-- Link to external CSS file -->
+    <title>Spotify Mood Analysis • EchoMood</title>
+    <!-- Link to the main CSS, served by Flask's static routing to ensure correct path resolution -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
+
 <body>
+    <!--
+    Main container: centers content and applies global padding/margins as defined in CSS.
+  -->
     <div class="container">
         <header>
+            <!-- Primary heading introduces the application name to users immediately. -->
             <h1>Welcome to EchoMood!</h1>
+            <!-- Tagline provides a concise app description and brand voice. -->
             <p class="tagline">Where your music echoes your soul.</p>
+
+            <!-- Logo section: wrapped in a <section> for semantic grouping of branding elements. -->
             <section class="logo-container">
                 <div class="logo-box">
+                    <!-- Circular border represents the orbital theme of the app's branding. -->
                     <div class="logo-circle">
+                        <!-- Music clef symbol conveys the musical focus of the application. -->
                         <div class="logo-clef">𝄞</div>
                     </div>
-                    <div class="logo-dot" style="--i:0;"></div>
-                    <div class="logo-dot" style="--i:1;"></div>
-                    <div class="logo-dot" style="--i:2;"></div>
-                    <div class="logo-dot" style="--i:3;"></div>
-                    <div class="logo-dot" style="--i:4;"></div>
-                    <div class="logo-dot" style="--i:5;"></div>
-                    <div class="logo-dot" style="--i:6;"></div>
-                    <div class="logo-dot" style="--i:7;"></div>
-                    <div class="logo-dot" style="--i:8;"></div>
-                    <div class="logo-dot" style="--i:9;"></div>
-                    <div class="logo-dot" style="--i:10;"></div>
-                    <div class="logo-dot" style="--i:11;"></div>
-                    <div class="logo-dot" style="--i:12;"></div>
-                    <div class="logo-dot" style="--i:13;"></div>
-                    <div class="logo-dot" style="--i:14;"></div>
-                    <div class="logo-dot" style="--i:15;"></div>
-                    <div class="logo-dot" style="--i:16;"></div>
-                    <div class="logo-dot" style="--i:17;"></div>
-                    <div class="logo-dot" style="--i:18;"></div>
-                    <div class="logo-dot" style="--i:19;"></div>
-                    <div class="logo-dot" style="--i:20;"></div>
-                    <div class="logo-dot" style="--i:21;"></div>
-                    <div class="logo-dot" style="--i:22;"></div>
-                    <div class="logo-dot" style="--i:23;"></div>
-                    <div class="logo-dot" style="--i:24;"></div>
-                    <div class="logo-dot" style="--i:25;"></div>
-                    <div class="logo-dot" style="--i:26;"></div>
-                    <div class="logo-dot" style="--i:27;"></div>
-                    <div class="logo-dot" style="--i:28;"></div>
-                    <div class="logo-dot" style="--i:29;"></div>
-                    <div class="logo-dot" style="--i:30;"></div>
-                    <div class="logo-dot" style="--i:31;"></div>
-                    <div class="logo-dot" style="--i:32;"></div>
-                    <div class="logo-dot" style="--i:33;"></div>
-                    <div class="logo-dot" style="--i:34;"></div>
-                    <div class="logo-dot" style="--i:35;"></div>
+                    <!--
+            Generate 36 orbiting dots with CSS variables:
+            --i index controls animation delay/orbit phase for each dot.
+          -->
+                    {% for i in range(36) %}
+                    <div class="logo-dot" style="--i:{{ i }};"></div>
+                    {% endfor %}
                 </div>
             </section>
-            <br>
+
+            <!-- Introductory text: elaborates on the app's core value proposition. -->
             <p class="intro-text">Turn your Spotify vibes into a colorful mood journey.</p>
             <p class="intro-text">EchoMood brings your emotions to life with vibrant visuals and personal insights!</p>
         </header>
 
-
+        <!-- Process overview: visually explains the two-step onboarding in a single section. -->
         <section class="process-overview">
-              <div class="logo">
+            <!-- Static logo display for consistency with branding. -->
+            <div class="logo">
                 <div id="multi-logo">
-                  <img src="../static/images/spotify-logo.svg"
-                  alt="My 3D Logo"
-                  class="spotify-logo"
-                  />
+                    <!--
+            Use Flask's url_for for static asset linking:
+            avoids brittle relative paths and ensures caching.
+          -->
+                    <img src="{{ url_for('static', filename='images/spotify-logo.svg') }}" alt="Spotify logo"
+                        class="spotify-logo" />
+                </div>
+            </div>
+
+            <!-- Steps container: lists key user actions before diving in. -->
             <div class="steps-container">
                 <div class="step">
                     <h3>Step 1: Connect Your Spotify Account</h3>
-                    <p>Link your Spotify account to allow us to analyze your listening habits and create a personalized mood profile.</p>
+                    <p>
+                        Link your Spotify account so we can securely fetch your listening habits
+                        and generate your personalized mood profile.
+                    </p>
                 </div>
                 <div class="step">
                     <h3>Step 2: See Your Analysis</h3>
-                    <p>Discover insights about your musical moods and get advice on how to improve your day through music.</p>
+                    <p>
+                        View interactive visualizations of your moods and get curated song recommendations
+                        that match how you feel.
+                    </p>
                 </div>
-                <button class="get-started-btn">Get Started</button>
+                <!--
+          Button to trigger JS redirect. Using type="button" prevents default form behavior.
+          Class "get-started-btn" is used in index.js to attach click handler.
+        -->
+                <button type="button" class="get-started-btn">Get Started</button>
             </div>
         </section>
 
+        <!-- Mood controls demo: interactive sliders showcase dynamic UI capabilities. -->
         <section class="mood-controls">
             <h2>Try It Out Below!</h2>
-            <br>
             <h3>Adjust your mood profile to see the colours change!</h3>
+
+            <!-- Grid layout holds each slider group for different moods. -->
             <div class="sliders-container">
+                <!-- Repeat this block for each mood with corresponding CSS classes. -->
                 <div class="slider-group">
+                    <!-- Label with color indicator for the mood. -->
                     <div class="slider-label">
                         <span>Happy</span>
                         <div class="slider-color happy-color"></div>
                     </div>
-                    <input type="range" min="0" max="100" value="50" class="mood-slider slider-happy" id="happy-slider">
+                    <!-- Range input bound to JS events in index.js to update background gradient. -->
+                    <input type="range" min="0" max="100" value="50" class="mood-slider slider-happy"
+                        id="happy-slider" />
                 </div>
+                <!-- Insert analogous slider-group blocks for Sad, Excited, Motivated, Chill, Angry -->
                 <div class="slider-group">
                     <div class="slider-label">
                         <span>Sad</span>
                         <div class="slider-color sad-color"></div>
                     </div>
-                    <input type="range" min="0" max="100" value="20" class="mood-slider slider-sad" id="sad-slider">
+                    <input type="range" min="0" max="100" value="20" class="mood-slider slider-sad" id="sad-slider" />
                 </div>
                 <div class="slider-group">
                     <div class="slider-label">
                         <span>Excited</span>
                         <div class="slider-color excited-color"></div>
                     </div>
-                    <input type="range" min="0" max="100" value="40" class="mood-slider slider-excited" id="excited-slider">
+                    <input type="range" min="0" max="100" value="40" class="mood-slider slider-excited"
+                        id="excited-slider" />
                 </div>
                 <div class="slider-group">
                     <div class="slider-label">
                         <span>Motivated</span>
                         <div class="slider-color motivated-color"></div>
                     </div>
-                    <input type="range" min="0" max="100" value="60" class="mood-slider slider-motivated" id="motivated-slider">
+                    <input type="range" min="0" max="100" value="60" class="mood-slider slider-motivated"
+                        id="motivated-slider" />
                 </div>
                 <div class="slider-group">
                     <div class="slider-label">
                         <span>Chill</span>
                         <div class="slider-color chill-color"></div>
                     </div>
-                    <input type="range" min="0" max="100" value="70" class="mood-slider slider-chill" id="chill-slider">
+                    <input type="range" min="0" max="100" value="70" class="mood-slider slider-chill"
+                        id="chill-slider" />
                 </div>
                 <div class="slider-group">
                     <div class="slider-label">
                         <span>Angry</span>
                         <div class="slider-color angry-color"></div>
                     </div>
-                    <input type="range" min="0" max="100" value="10" class="mood-slider slider-angry" id="angry-slider">
+                    <input type="range" min="0" max="100" value="10" class="mood-slider slider-angry"
+                        id="angry-slider" />
                 </div>
             </div>
         </section>
 
+        <!--
+      Placeholder section for icons: dynamically populated by visualise.js
+      based on actual user mood data fetched after login/OAuth.
+    -->
         <section class="music-icons-container" id="music-icons">
-            <!-- Music icons will be dynamically generated here -->
         </section>
 
+        <!-- Footer provides context that this is a proof of concept. -->
         <footer>
             <p>Static-Page Spotify Mood Analysis Proof of Concept</p>
         </footer>
     </div>
 
+    <!--
+    Load the landing-page JS file to attach click handler for Get Started button.
+    Using defer ensures this script executes after HTML parsing completes.
+  -->
+    <script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
 </body>
+
 </html>

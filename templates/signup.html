@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up – Step 1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sign up for EchoMood, where your music echoes your soul.">
+    <meta name="keywords" content="EchoMood, Sign Up, Music, Mood Analysis">
+    <meta name="author" content="EchoMood Team">
+    
+    <!-- Linking the login-specific stylesheet; Flask will resolve the static path dynamically -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+
+<body>
+    <!-- Section containing animated background tiles for aesthetic visual feedback -->
+    <div class="container">
+        <!-- Each .box uses a custom CSS variable for its base color, creating a spotlight effect -->
+        <div class="box" style="--clr: var(--happy-color);"></div>
+        <div class="box" style="--clr: var(--sad-color);"></div>
+        <div class="box" style="--clr: var(--excited-color);"></div>
+        <div class="box" style="--clr: var(--angry-color);"></div>
+        <div class="box" style="--clr: var(--chill-color);"></div>
+        <div class="box" style="--clr: var(--motivated-color);"></div>
+        <div class="box" style="--clr: var(--happy-color);"></div>
+        <div class="box" style="--clr: var(--sad-color);"></div>
+        <div class="box" style="--clr: var(--excited-color);"></div>
+        <div class="box" style="--clr: var(--angry-color);"></div>
+        <div class="box" style="--clr: var(--chill-color);"></div>
+        <div class="box" style="--clr: var(--motivated-color);"></div>
+        <div class="box" style="--clr: var(--happy-color);"></div>
+        <div class="box" style="--clr: var(--sad-color);"></div>
+        <div class="box" style="--clr: var(--excited-color);"></div>
+        <div class="box" style="--clr: var(--angry-color);"></div>
+        <div class="box" style="--clr: var(--chill-color);"></div>
+        <div class="box" style="--clr: var(--motivated-color);"></div>
+    </div>
+    <div class="login">
+        <h2>Sign Up</h2>
+
+        <!-- Step 1 Form: Basic Details -->
+        <form method="POST" action="{{ url_for('signup') }}">
+            {{ form.hidden_tag() }}
+
+            <!-- First Name (Required) -->
+            <div class="inputBox">
+                {{ form.first_name(class="authentication", placeholder=" ", required=True) }}
+                <span>First Name</span>
+            </div>
+
+            <!-- Last Name (Optional) -->
+            <div class="inputBox">
+                {{ form.last_name(class="authentication", placeholder=" ") }}
+                <span>Last Name</span>
+            </div>
+
+            <!-- Age (Required) -->
+            <div class="inputBox">
+                {{ form.age(class="authentication", placeholder=" ", required=True) }}
+                <span>Age</span>
+            </div>
+
+            <!-- Continue Button -->
+            <div class="inputBox">
+                {{ form.continue_button(class="authentication", value="Continue") }}
+            </div>
+        </form>
+
+        <!-- Links for password recovery and new user sign-up -->
+        <div class="group">
+            <a href="{{ url_for('login') }}">Already have an account? Login</a>
+        </div>
+        
+        <!-- Visual divider for alternate login methods -->
+        <div class="or-divider"><span>OR</span></div>
+        
+        <!-- Spotify OAuth login button with redirect using Flask route -->
+        <button type="button" class="inputBox oauth-btn spotify-btn" onclick="location.href='{{ url_for('oauth_spotify') }}'">
+            <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png"
+                alt="Spotify logo" class="btn-icon">
+            Connect with Spotify
+        </button>
+        
+        <!-- Apple Music OAuth login button -->
+        <button type="button" class="inputBox oauth-btn apple-btn" onclick="location.href='{{ url_for('oauth_apple') }}'">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" alt="Apple Music logo"
+                class="btn-icon">
+            Connect with Apple Music
+        </button>
+    </div>
+        
+    <!-- JavaScript file that powers spotlight hover effect on background tiles -->
+    <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+</body>
+        
+</html>

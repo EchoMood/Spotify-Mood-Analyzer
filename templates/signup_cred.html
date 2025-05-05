@@ -1,0 +1,73 @@
+<!-- signup_cred.html - Step 2 of Signup Flow -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up – Credentials</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sign up to EchoMood with your login credentials.">
+    <meta name="keywords" content="EchoMood, Login, Sign Up">
+    <meta name="author" content="EchoMood Team">
+
+    <!-- Linking stylesheet for consistent dark-themed UI -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+
+<body>
+    <!-- Background visual spotlight animation tiles -->
+    <div class="container">
+        <div class="box" style="--clr: var(--happy-color);"></div>
+        <div class="box" style="--clr: var(--sad-color);"></div>
+        <div class="box" style="--clr: var(--excited-color);"></div>
+        <div class="box" style="--clr: var(--motivated-color);"></div>
+        <div class="box" style="--clr: var(--chill-color);"></div>
+        <div class="box" style="--clr: var(--angry-color);"></div>
+        <div class="box" style="--clr: var(--happy-color);"></div>
+        <div class="box" style="--clr: var(--sad-color);"></div>
+        <div class="box" style="--clr: var(--excited-color);"></div>
+    </div>
+
+    <!-- Main form section for Step 2 credentials input -->
+    <div class="login">
+        <h2>Sign Up - Step 2</h2>
+
+        <!-- Credentials Form -->
+        <form method="POST" action="{{ url_for('signup_login_credentials') }}">
+            {{ form.hidden_tag() }}
+
+            <!-- Email Input Field -->
+            <div class="inputBox">
+                {{ form.email(class="authentication", placeholder=" ") }}
+                <span>Email</span>
+            </div>
+
+            <!-- Password Input Field -->
+            <div class="inputBox">
+                {{ form.password(class="authentication", placeholder=" ") }}
+                <span>Password</span>
+            </div>
+
+            <!-- Confirm Password Field -->
+            <div class="inputBox">
+                {{ form.confirm_password(class="authentication", placeholder=" ") }}
+                <span>Confirm Password</span>
+            </div>
+
+            <!-- Submit Sign Up Button -->
+            <div class="inputBox">
+                {{ form.submit(class="authentication", value="Sign Up") }}
+            </div>
+        </form>
+
+        <!-- Navigation to Login Page for Existing Users -->
+        <div class="group">
+            <a href="{{ url_for('login') }}">Already have an account? Login</a>
+        </div>
+    </div>
+
+    <!-- JavaScript controlling background interactions -->
+    <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+</body>
+
+</html>
