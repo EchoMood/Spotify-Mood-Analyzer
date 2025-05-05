@@ -1,15 +1,19 @@
 # app.py – EchoMood Flask Application with DB + Hashed Login + Test User
-
-import os
-from flask import Flask, render_template, redirect, flash, url_for, session
-from flask_wtf import FlaskForm
-from wtforms import EmailField, PasswordField, SubmitField, StringField
-from wtforms.validators import DataRequired, Email, Optional
-from flask_wtf.csrf import CSRFProtect
-
-# Import SQLAlchemy ORM and password hashing utilities
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
+try:
+    import os
+    from flask import Flask, render_template, redirect, flash, url_for, session
+    from flask_wtf import FlaskForm
+    from wtforms import EmailField, PasswordField, SubmitField, StringField
+    from wtforms.validators import DataRequired, Email, Optional
+    from flask_wtf.csrf import CSRFProtect
+    # Import SQLAlchemy ORM and password hashing utilities
+    from flask_sqlalchemy import SQLAlchemy
+    from werkzeug.security import generate_password_hash, check_password_hash
+except ImportError:
+    print("\nMissing required packages! Please run:")
+    print("   pip install -r requirements.txt\n")
+    exit(1)
+    
 from forms import LoginForm, SignupStepOneForm, SignupStepTwoForm
 
 # ----------------------------------------------------------
