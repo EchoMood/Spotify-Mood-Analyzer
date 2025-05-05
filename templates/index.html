@@ -64,10 +64,7 @@
         <section class="process-overview">
               <div class="logo">
                 <div id="multi-logo">
-                  <img src="../static/images/spotify-logo.svg"
-                  alt="My 3D Logo"
-                  class="spotify-logo"
-                  />
+                    <img src="{{ url_for('static', filename='images/spotify-logo.png') }}" alt="Spotify Logo" width="120">
             <div class="steps-container">
                 <div class="step">
                     <h3>Step 1: Connect Your Spotify Account</h3>
@@ -77,7 +74,9 @@
                     <h3>Step 2: See Your Analysis</h3>
                     <p>Discover insights about your musical moods and get advice on how to improve your day through music.</p>
                 </div>
-                <button class="get-started-btn">Get Started</button>
+                <!-- <button class="get-started-btn">Get Started</button> -->
+                <a href="/login" class="get-started-btn btn btn-primary">Get Started</a>
+
             </div>
         </section>
 

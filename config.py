@@ -5,7 +5,8 @@ load_dotenv()
 # Base configuration shared by all environments
 class Config:
     # Flask configuration
-    SECRET_KEY = os.environ.get('dev_secret_key')
+    # SECRET_KEY = os.environ.get('dev_secret_key')
+    SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
     print("secret: ", SECRET_KEY)
     DEBUG = False
     TESTING = False
@@ -13,7 +14,7 @@ class Config:
     # Spotify API configuration
     SPOTIFY_CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID', 'your-client-id')
     SPOTIFY_CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET', 'your-client-secret')
-    REDIRECT_URI = os.environ.get('REDIRECT_URI')
+    REDIRECT_URI = os.environ.get("REDIRECT_URI")
     print("URI is: ", REDIRECT_URI)
     AUTH_URL = 'https://accounts.spotify.com/authorize'
     TOKEN_URL = 'https://accounts.spotify.com/api/token'

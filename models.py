@@ -14,16 +14,36 @@ class User(db.Model):
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Track(db.Model):
-    id = db.Column(db.String(50), primary_key=True)
+    __tablename__ = 'track'
+
+    id = db.Column(db.String(50))
     user_id = db.Column(db.String(50), db.ForeignKey('user.id'))
+    time_range = db.Column(db.String(20))  # short_term, medium_term, long_term
+
     name = db.Column(db.String(200))
     artist = db.Column(db.String(200))
     album = db.Column(db.String(200))
     album_image_url = db.Column(db.String(200))
     popularity = db.Column(db.Integer)
-    time_range = db.Column(db.String(20))  # short_term, medium_term, long_term
-    rank = db.Column(db.Integer)  # Position in the user's top tracks
+    rank = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.PrimaryKeyConstraint('id', 'user_id', 'time_range'),
+    )
+
+# Previous code
+# class Track(db.Model):
+#     id = db.Column(db.String(50), primary_key=True)
+#     user_id = db.Column(db.String(50), db.ForeignKey('user.id'))
+#     name = db.Column(db.String(200))
+#     artist = db.Column(db.String(200))
+#     album = db.Column(db.String(200))
+#     album_image_url = db.Column(db.String(200))
+#     popularity = db.Column(db.Integer)
+#     time_range = db.Column(db.String(20))  # short_term, medium_term, long_term
+#     rank = db.Column(db.Integer)  # Position in the user's top tracks
+#     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AudioFeatures(db.Model):
     id = db.Column(db.String(50), primary_key=True)

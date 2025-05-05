@@ -14,16 +14,20 @@ except ImportError:
     from __init__ import create_app
 
 
+# Create the app globally so it can be imported
+config_name = os.environ.get('FLASK_CONFIG', 'development')
+app = create_app(config_name)
+
 def main():
     """
     Run the application using the configuration from environment variables.
     """
     try:
-        # Get configuration from environment variable or use default
-        config_name = os.environ.get('FLASK_CONFIG', 'development')
+        # # Get configuration from environment variable or use default
+        # config_name = os.environ.get('FLASK_CONFIG', 'development')
 
-        # Create app with the proper configuration
-        app = create_app(config_name)
+        # # Create app with the proper configuration
+        # app = create_app(config_name)
 
         # Run with debugging enabled or disabled based on configuration
         app.run(debug=app.config['DEBUG'])

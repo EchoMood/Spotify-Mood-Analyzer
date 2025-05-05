@@ -56,10 +56,12 @@ def create_app(config_name='development'):
         session['state'] = state
 
         # Define scopes needed for the application
-        scope = 'user-top-read user-read-email user-read-private'
+        scope = 'user-top-read user-read-private user-read-recently-played'
 
         # Get authorization URL from Spotify API utility
         auth_url = spotify_api.get_auth_url(state, scope)
+
+        print("🟢 Using redirect_uri:", app.config.get("REDIRECT_URI"))
 
         return redirect(auth_url)
 
@@ -89,57 +91,57 @@ def create_app(config_name='development'):
             return redirect(url_for('index'))
 
         #TODO: make a call to spotify API
-        # token_data = spotify_api.get_access_token(code)
-        # print("Token data: ", token_data)
+        token_data = spotify_api.get_access_token(code)
+        print("Token data: ", token_data)
 
 
-        # if not token_data:
-        #     print("DEBUG no token data, redirecting to index\n")
-        #     return redirect(url_for('index'))
-        #
-        # # Extract token information
-        # access_token = token_data['access_token']
-        # refresh_token = token_data['refresh_token']
-        # expires_in = token_data['expires_in']
-        # token_expiry = datetime.utcnow() + timedelta(seconds=expires_in)
-        #
-        # # Get user profile using Spotify API utility
-        # user_data = spotify_api.get_user_profile(access_token)
-        # print("User data: ", user_data)
+        if not token_data:
+            print("DEBUG no token data, redirecting to index\n")
+            return redirect(url_for('index'))
+        
+        # Extract token information
+        access_token = token_data['access_token']
+        refresh_token = token_data['refresh_token']
+        expires_in = token_data['expires_in']
+        token_expiry = datetime.utcnow() + timedelta(seconds=expires_in)
+        
+        # Get user profile using Spotify API utility
+        user_data = spotify_api.get_user_profile(access_token)
+        print("User data: ", user_data)
         # session['access_token'] = access_token
 
         # if not user_data:
         #     return redirect(url_for('index'))
 
-        #todo: implement logic for database stuff
-        # # Save or update user in database
-        # user = User.query.filter_by(id=user_data['id']).first()
-        #
-        # if user:
-        #     # Update existing user
-        #     user.access_token = access_token
-        #     user.refresh_token = refresh_token
-        #     user.token_expiry = token_expiry
-        #     user.last_login = datetime.utcnow()
-        # else:
-        #     # Create new user
-        #     user = User(
-        #         id=user_data['id'],
-        #         email=user_data.get('email', ''),
-        #         display_name=user_data.get('display_name', ''),
-        #         access_token=access_token,
-        #         refresh_token=refresh_token,
-        #         token_expiry=token_expiry
-        #     )
-        #     db.session.add(user)
-        #
-        # db.session.commit()
-        #
-        # # Store user ID in session
-        # session['user_id'] = user.id
-        #
-        # # Start data collection process
-        # fetch_and_store_user_data(user.id, spotify_api)
+        #TODO: implement logic for database stuff
+        # Save or update user in database
+        user = User.query.filter_by(id=user_data['id']).first()
+        
+        if user:
+            # Update existing user
+            user.access_token = access_token
+            user.refresh_token = refresh_token
+            user.token_expiry = token_expiry
+            user.last_login = datetime.utcnow()
+        else:
+            # Create new user
+            user = User(
+                id=user_data['id'],
+                email=user_data.get('email', ''),
+                display_name=user_data.get('display_name', ''),
+                access_token=access_token,
+                refresh_token=refresh_token,
+                token_expiry=token_expiry
+            )
+            db.session.add(user)
+        
+        db.session.commit()
+        
+        # Store user ID in session
+        session['user_id'] = user.id
+        
+        # Start data collection process
+        fetch_and_store_user_data(user.id, spotify_api)
 
         # Redirect to visualization page
         return redirect(url_for('visualise'))
@@ -154,7 +156,7 @@ def create_app(config_name='development'):
         # Get default time range (medium_term if not specified)
         time_range = request.args.get('time_range', 'medium_term')
 
-        #todo: checking if user not logged in properly
+        #TODO: checking if user not logged in properly
         # # Load user data for visualization
         # user_id = session.get('user_id')
         # user = User.query.get(user_id)
@@ -298,10 +300,21 @@ def fetch_and_store_user_data(user_id, spotify_api):
 
         # Store track information
         track_ids = []
-        for i, item in enumerate(tracks_data['items']):
-            track = Track.query.filter_by(id=item['id'], user_id=user.id, time_range=time_range).first()
 
-            if not track:
+        for i, item in enumerate(tracks_data['items']):
+            existing_track = Track.query.filter_by(
+                id=item['id'],
+                user_id=user.id,
+                time_range=time_range
+            ).first()
+
+            if existing_track:
+                # if the track already exists, update its rank and popularity
+                existing_track.rank = i + 1
+                existing_track.popularity = item['popularity']
+                existing_track.created_at = datetime.utcnow()
+            else:
+                # if the track doesn't exist, create a new one
                 track = Track(
                     id=item['id'],
                     user_id=user.id,
@@ -314,14 +327,36 @@ def fetch_and_store_user_data(user_id, spotify_api):
                     rank=i + 1
                 )
                 db.session.add(track)
-            else:
-                track.rank = i + 1
-                track.popularity = item['popularity']
-                track.created_at = datetime.utcnow()
 
             track_ids.append(item['id'])
 
         db.session.commit()
+        
+        # # Previous code
+        # for i, item in enumerate(tracks_data['items']):
+        #     track = Track.query.filter_by(id=item['id'], user_id=user.id, time_range=time_range).first()
+
+        #     if not track:
+        #         track = Track(
+        #             id=item['id'],
+        #             user_id=user.id,
+        #             name=item['name'],
+        #             artist=item['artists'][0]['name'],
+        #             album=item['album']['name'],
+        #             album_image_url=item['album']['images'][0]['url'] if item['album']['images'] else None,
+        #             popularity=item['popularity'],
+        #             time_range=time_range,
+        #             rank=i + 1
+        #         )
+        #         db.session.add(track)
+        #     else:
+        #         track.rank = i + 1
+        #         track.popularity = item['popularity']
+        #         track.created_at = datetime.utcnow()
+
+        #     track_ids.append(item['id'])
+
+        # db.session.commit()
 
         # Fetch audio features in batches
         fetch_audio_features(track_ids, user.access_token)

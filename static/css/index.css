@@ -192,10 +192,11 @@
             padding: 12px 24px;
             border-radius: 30px;
             font-size: 1rem;
-            font-weight: bold;
+            font-weight: 720;
             cursor: pointer;
             transition: transform 0.2s ease, background 0.3s ease;
             margin-top: 1rem;
+            text-decoration: none;
         }
 
         .get-started-btn:hover {
