@@ -42,7 +42,7 @@
         header h1 {
             font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 3rem;
-            font-weight: 800;
+            font-weight: bold;
             letter-spacing: 1px;
             color: #ffffff;
             margin-bottom: 0.5rem;
@@ -192,7 +192,7 @@
             padding: 12px 24px;
             border-radius: 30px;
             font-size: 1rem;
-            font-weight: 720;
+            font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s ease, background 0.3s ease;
             margin-top: 1rem;
