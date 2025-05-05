@@ -56,7 +56,63 @@ class LoginForm(FlaskForm):
 def index():
     return render_template('index.html')
 
+# ----------------------------------------------------------
+# Step 1: Basic Info
+# ----------------------------------------------------------
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    form = SignupStepOneForm()
+    if form.validate_on_submit():
+        session['first_name'] = form.first_name.data
+        session['last_name'] = form.last_name.data
+        session['age'] = form.age.data
+        return redirect(url_for('signup_login_credentials'))
+    return render_template('signup.html', form=form)
 
+# ----------------------------------------------------------
+# Step 2: Login Credentials
+# ----------------------------------------------------------
+@app.route('/signup/login_credentials', methods=['GET', 'POST'])
+def signup_login_credentials():
+    form = SignupStepTwoForm()
+
+    # Prevent direct access to Step 2 if Step 1 not done
+    if not session.get('first_name'):
+        flash('Please complete Step 1 first.', 'warning')
+        return redirect(url_for('signup'))
+
+    # Check if the form is submitted and valid
+    if form.validate_on_submit():
+        # Retrieve values from session (Step 1)
+        first_name = session.get('first_name')
+        last_name = session.get('last_name')
+        age = session.get('age')
+        email = form.email.data
+
+        # ❗ Check if the email already exists in the database
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('An account with this email already exists. Please proceed to the login page.', 'danger')
+            return render_template('signup_cred.html', form=form)
+
+        # ✅ If not, proceed to create user
+        hashed_pw = generate_password_hash(form.password.data)
+        new_user = User(
+            first_name=first_name,
+            last_name=last_name,
+            age=age,
+            email=email,
+            password=hashed_pw
+        )
+        db.session.add(new_user)
+        db.session.commit()
+
+        # Clear session data and redirect
+        session.clear()
+        flash('Account created successfully!', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('signup_cred.html', form=form)
 # ----------------------------------------------------------
 # Login Route – Handles user authentication
 # ----------------------------------------------------------
@@ -75,7 +131,10 @@ def login():
         # Validate password against stored hash
         if user and check_password_hash(user.password, password):
             flash('Login successful!', 'success')
-            return redirect(url_for('index'))
+            # After successful login
+            session['user_email'] = user.email
+            session['first_name'] = user.first_name  # 👈 Store first name
+            return redirect(url_for('visualise', email=user.email))
         else:
             flash('Invalid email or password. Please try again.', 'danger')
 
@@ -95,51 +154,25 @@ def oauth_apple():
     return redirect('https://appleid.apple.com/auth/authorize?...')
 
 # ----------------------------------------------------------
-# Step 1: Basic Info
+# Route: Personalized Visualisation Page – Secured by Session
 # ----------------------------------------------------------
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    form = SignupStepOneForm()
-    if form.validate_on_submit():
-        session['first_name'] = form.first_name.data
-        session['last_name'] = form.last_name.data
-        session['age'] = form.age.data
-        return redirect(url_for('signup_login_credentials'))
-    return render_template('signup.html', form=form)
-
-@app.route('/signup/login_credentials', methods=['GET', 'POST'])
-def signup_login_credentials():
-    form = SignupStepTwoForm()
-    # Prevent direct access to Step 2 if Step 1 not done
-    if not session.get('first_name'):
-        flash('Please complete Step 1 first.', 'warning')
-        return redirect(url_for('signup'))
-
-    # Check if the form is submitted and valid
-    if form.validate_on_submit():
-        # Retrieve values from session (Step 1)
-        first_name = session.get('first_name')
-        last_name = session.get('last_name')
-        age = session.get('age')
-
-        # Hash password and create user
-        hashed_pw = generate_password_hash(form.password.data)
-        new_user = User(
-            first_name=first_name,
-            last_name=last_name,
-            age=age,
-            email=form.email.data,
-            password=hashed_pw
-        )
-        db.session.add(new_user)
-        db.session.commit()
-
-        # Clear session data and redirect
-        session.clear()
-        flash('Account created successfully!', 'success')
+@app.route('/visualise/<email>')
+def visualise(email):
+    # Check if user is logged in and matches the email in the session
+    if 'user_email' not in session or session['user_email'] != email:
+        flash('Please log in to view your visualisation.', 'warning')
         return redirect(url_for('login'))
+    
+    return render_template('visualise.html', email=email, first_name=session.get('first_name'))
+# ================================
+# Route: Admin View User Table
+# ================================
+@app.route('/admin/users')
+def admin_view_users():
+    """Displays all users stored in the database via HTML table."""
+    all_users = User.query.all()  # Retrieve all user records
+    return render_template('admin_users.html', users=all_users)
 
-    return render_template('signup_cred.html', form=form)
 # ----------------------------------------------------------
 # Main Application Entry Point
 # ----------------------------------------------------------
@@ -148,21 +181,25 @@ if __name__ == '__main__':
         # Create all DB tables if they do not exist
         db.create_all()
 
-        # # --------------------------------------------------
-        # # Test User Creation (one-time only)
-        # # --------------------------------------------------
-        # test_email = 'admin@example.com'
-        # test_password = 'securepassword'
+        # --------------------------------------------------------
+        # Insert dummy user only if it doesn't already exist
+        # --------------------------------------------------------
+        dummy_email = 'admin@example.com'
+        user = User.query.filter_by(email=dummy_email).first()
 
-        # # Check if test user exists; if not, create it
-        # if not User.query.filter_by(email=test_email).first():
-        #     hashed_pw = generate_password_hash(test_password)
-        #     test_user = User(email=test_email, password=hashed_pw)
-        #     db.session.add(test_user)
-        #     db.session.commit()
-        #     print(f'[✔] Test user created: {test_email} / {test_password}')
-        # else:
-        #     print(f'[ℹ] Test user already exists: {test_email}')
+        if not user:
+            dummy_user = User(
+                first_name='Admin',
+                last_name='User',
+                age=30,
+                email=dummy_email,
+                password=generate_password_hash('adminpass')
+            )
+            db.session.add(dummy_user)
+            db.session.commit()
+            print(f"✅ Dummy user '{dummy_email}' was added.")
+        else:
+            print(f"✅ Dummy user '{dummy_email}' already exists.")
 
     # Start the Flask development server
     app.run(debug=True)

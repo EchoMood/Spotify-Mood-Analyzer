@@ -21,3 +21,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+// Flash message fade-out and close functionality
+document.addEventListener('DOMContentLoaded', () => {
+  const flashMessages = document.querySelectorAll('.flash-message');
+
+  flashMessages.forEach(msg => {
+    // Auto fade-out after 5 seconds
+    setTimeout(() => {
+      msg.classList.add('fade-out');
+    }, 5000);
+
+    // Manually dismiss on click of close icon
+    const closeBtn = msg.querySelector('.flash-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+      // Add fade-out animation
+      msg.classList.add('fade-out');
+
+      // Wait for the animation to complete before removing from DOM
+      setTimeout(() => {
+        msg.remove();
+      }, 500); // Match this duration to your CSS transition (500ms)
+    });
+    }
+  });
+});
