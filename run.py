@@ -2,6 +2,8 @@
 """
 Main application entry point for the Spotify Mood Analysis application.
 """
+from dotenv import load_dotenv
+load_dotenv()
 
 import os
 
