@@ -6,84 +6,11 @@
     <title>Visualisation - Mood & Personality</title>
     <!-- Link to external CSS file -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/visualise.css') }}">
-    <!-- Add time range selector CSS -->
-    <style>
-        .time-range-selector {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-            gap: 15px;
-        }
+    <!-- Link to external JS file -->
+    <script src="{{ url_for('static', filename='js/visualise.js') }}"></script>
 
-        .time-range-button {
-            padding: 10px 20px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border: none;
-            border-radius: 12px;
-            color: #ffffff;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .time-range-button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .time-range-button.active {
-            background-color: #7b2ff7;
-            font-weight: bold;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .loading-overlay.visible {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 5px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #7b2ff7;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
 </head>
 <body>
-
-    <!-- Loading overlay -->
-    <div class="loading-overlay" id="loading-overlay">
-        <div class="loading-spinner"></div>
-    </div>
-
-    <!-- Logout button-->
-    <div class="logout-container">
-        <form action="{{ url_for('logout') }}" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="logout-button">Logout</button>
-        </form>
-    </div>
 
     <!-- Background Section: Dark cosmic theme -->
     <section class="background">
@@ -92,69 +19,293 @@
         <h2 class="greeting">Your Spotify Mood Analysis</h2>
         <br>
         <p class="subheading">An overview of your mood patterns and music-driven personality</p>
-
-        <!-- Add time range selector -->
-        <div class="time-range-selector">
-            <button class="time-range-button {% if time_range == 'short_term' %}active{% endif %}" data-range="short_term">Last 4 Weeks</button>
-            <button class="time-range-button {% if time_range == 'medium_term' %}active{% endif %}" data-range="medium_term">Last 6 Months</button>
-            <button class="time-range-button {% if time_range == 'long_term' %}active{% endif %}" data-range="long_term">All Time</button>
-        </div>
     </section>
 
     <!-- Mood Cards Section -->
     <section class="mood-cards-container">
         <h2 class="section-title">Mood Breakdown</h2>
-        <div class="mood-cards-scroll" id="mood-cards-container">
-            <!-- Mood cards will be dynamically generated here -->
+        <div class="mood-cards-scroll">
 
-            {% for mood_name, mood in mood_data.items() %}
-            <!-- Mood Card: {{ mood_name|capitalize }} -->
+            <!-- Mood Card #1: Happy -->
             <div class="mood-card">
                 <!-- TODO: Replace this emoji placeholder with a more vivid, AI‑generated illustration that captures the mood -->
-                <div class="emoji">
-                    {% if mood_name == 'happy' %}😊
-                    {% elif mood_name == 'sad' %}😢
-                    {% elif mood_name == 'energetic' %}⚡
-                    {% elif mood_name == 'chill' %}😎
-                    {% elif mood_name == 'nostalgic' %}🕰️
-                    {% endif %}
-                </div>
+                <div class="emoji">😊</div>
 
-                <h3>{{ mood_name|capitalize }}</h3>
-                <p>{{ mood.percentage }}% of the time</p>
+                <h3>Happy</h3>
+                <p>40% of the time</p>
 
-                {% if mood.top_track %}
                 <!-- Top song associated with this mood -->
                 <div class="top-song">
                     <!-- Left: Album cover -->
-                    <img src="{{ mood.top_track.image }}" alt="Album cover" class="album-cover">
+                    <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
                     <!-- Right: Song details -->
                     <div class="song-info">
-                        <p class="song-title">{{ mood.top_track.name }}</p>
-                        <p class="song-artist">{{ mood.top_track.artist }}</p>
+                        <p class="song-title">Song 1</p>
+                        <p class="song-artist">Artist 1</p>
                     </div>
                 </div>
-                {% endif %}
 
+                <!-- Time of day this mood appears -->
+                <p class="time-of-day">Usually felt at: Night (8pm-11pm)</p>
+                
                 <!-- Recommended Songs for this mood -->
                 <div class="recommendations">
                     <p class="recommend-title">Recommended Songs:</p>
                     <ul class="recommended-songs">
-                        {% for track in mood.recommended_tracks %}
-                        <!-- Song {{ loop.index }} -->
+                        <!-- Song 1 -->
                         <li class="song-item">
-                            <img src="{{ track.image }}" alt="Album cover" class="album-cover">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
                             <div class="song-info">
-                                <p class="song-title">{{ track.name }}</p>
-                                <p class="song-artist">{{ track.artist }}</p>
+                                <p class="song-title">Song 1</p>
+                                <p class="song-artist">Artist 1</p>
                             </div>
                         </li>
-                        {% endfor %}
+                    
+                        <!-- Song 2 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 2</p>
+                                <p class="song-artist">Artist 2</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 3 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 3</p>
+                                <p class="song-artist">Artist 3</p>
+                            </div>
+                        </li>
                     </ul>
                 </div>
             </div>
-            {% endfor %}
 
+            <!-- Mood Card #2: Sad -->
+            <div class="mood-card">
+                <!-- TODO: Replace this emoji placeholder with a more vivid, AI‑generated illustration that captures the mood -->
+                <div class="emoji">😊</div>
+
+                <h3>Sad</h3>
+                <p>40% of the time</p>
+
+                <!-- Top song associated with this mood -->
+                <div class="top-song">
+                    <!-- Left: Album cover -->
+                    <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
+                    <!-- Right: Song details -->
+                    <div class="song-info">
+                        <p class="song-title">Song 1</p>
+                        <p class="song-artist">Artist 1</p>
+                    </div>
+                </div>
+
+                <!-- Time of day this mood appears -->
+                <p class="time-of-day">Usually felt at: Night (8pm-11pm)</p>
+                
+                <!-- Recommended Songs for this mood -->
+                <div class="recommendations">
+                    <p class="recommend-title">Recommended Songs:</p>
+                    <ul class="recommended-songs">
+                        <!-- Song 1 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 1</p>
+                                <p class="song-artist">Artist 1</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 2 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 2</p>
+                                <p class="song-artist">Artist 2</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 3 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 3</p>
+                                <p class="song-artist">Artist 3</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Mood Card #3: Chill -->
+            <div class="mood-card">
+                <!-- TODO: Replace this emoji placeholder with a more vivid, AI‑generated illustration that captures the mood -->
+                <div class="emoji">😊</div>
+
+                <h3>Chill</h3>
+                <p>40% of the time</p>
+
+                <!-- Top song associated with this mood -->
+                <div class="top-song">
+                    <!-- Left: Album cover -->
+                    <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
+                    <!-- Right: Song details -->
+                    <div class="song-info">
+                        <p class="song-title">Song 1</p>
+                        <p class="song-artist">Artist 1</p>
+                    </div>
+                </div>
+
+                <!-- Time of day this mood appears -->
+                <p class="time-of-day">Usually felt at: Night (8pm-11pm)</p>
+                
+                <!-- Recommended Songs for this mood -->
+                <div class="recommendations">
+                    <p class="recommend-title">Recommended Songs:</p>
+                    <ul class="recommended-songs">
+                        <!-- Song 1 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 1</p>
+                                <p class="song-artist">Artist 1</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 2 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 2</p>
+                                <p class="song-artist">Artist 2</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 3 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 3</p>
+                                <p class="song-artist">Artist 3</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Mood Card #4: Energetic -->
+            <div class="mood-card">
+                <!-- TODO: Replace this emoji placeholder with a more vivid, AI‑generated illustration that captures the mood -->
+                <div class="emoji">😊</div>
+
+                <h3>Energetic</h3>
+                <p>40% of the time</p>
+
+                <!-- Top song associated with this mood -->
+                <div class="top-song">
+                    <!-- Left: Album cover -->
+                    <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
+                    <!-- Right: Song details -->
+                    <div class="song-info">
+                        <p class="song-title">Song 1</p>
+                        <p class="song-artist">Artist 1</p>
+                    </div>
+                </div>
+
+                <!-- Time of day this mood appears -->
+                <p class="time-of-day">Usually felt at: Night (8pm-11pm)</p>
+                
+                <!-- Recommended Songs for this mood -->
+                <div class="recommendations">
+                    <p class="recommend-title">Recommended Songs:</p>
+                    <ul class="recommended-songs">
+                        <!-- Song 1 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 1</p>
+                                <p class="song-artist">Artist 1</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 2 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 2</p>
+                                <p class="song-artist">Artist 2</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 3 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 3</p>
+                                <p class="song-artist">Artist 3</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Mood Card #5: Nostalgic -->
+            <div class="mood-card">
+                <!-- TODO: Replace this emoji placeholder with a more vivid, AI‑generated illustration that captures the mood -->
+                <div class="emoji">😊</div>
+
+                <h3>Nostalgic</h3>
+                <p>40% of the time</p>
+
+                <!-- Top song associated with this mood -->
+                <div class="top-song">
+                    <!-- Left: Album cover -->
+                    <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
+                    <!-- Right: Song details -->
+                    <div class="song-info">
+                        <p class="song-title">Song 1</p>
+                        <p class="song-artist">Artist 1</p>
+                    </div>
+                </div>
+
+                <!-- Time of day this mood appears -->
+                <p class="time-of-day">Usually felt at: Night (8pm-11pm)</p>
+                
+                <!-- Recommended Songs for this mood -->
+                <div class="recommendations">
+                    <p class="recommend-title">Recommended Songs:</p>
+                    <ul class="recommended-songs">
+                        <!-- Song 1 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 1</p>
+                                <p class="song-artist">Artist 1</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 2 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 2</p>
+                                <p class="song-artist">Artist 2</p>
+                            </div>
+                        </li>
+                    
+                        <!-- Song 3 -->
+                        <li class="song-item">
+                            <img src="{{ url_for('static', filename='images/album1.jpg') }}" alt="Album cover" class="album-cover">
+                            <div class="song-info">
+                                <p class="song-title">Song 3</p>
+                                <p class="song-artist">Artist 3</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
         </div>
     </section>
 
@@ -166,7 +317,7 @@
             <!-- Left: MBTI and AI-generated image -->
             <div class="left">
                 <h3>INTJ</h3>
-                <img src="{{ url_for('static', filename='images/virtual-pet.png') }}" alt="AI-generated personality character">
+                <img src="/static/images/virtual-pet.png" alt="AI-generated personality character">
             </div>
 
             <!-- Right: Summary and related songs -->
@@ -187,8 +338,8 @@
                     <li class="song-item">
                         <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
                         <div class="song-info">
-                            <p class="song-title">Song 2</p>
-                            <p class="song-artist">Artist 2</p>
+                            <p class="song-title">Song 1</p>
+                            <p class="song-artist">Artist 1</p>
                         </div>
                     </li>
 
@@ -196,8 +347,8 @@
                     <li class="song-item">
                         <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
                         <div class="song-info">
-                            <p class="song-title">Song 3</p>
-                            <p class="song-artist">Artist 3</p>
+                            <p class="song-title">Song 1</p>
+                            <p class="song-artist">Artist 1</p>
                         </div>
                     </li>
                 </ul>
@@ -207,140 +358,6 @@
             </div>
         </div>
     </section>
-
-    <!-- JavaScript for interactive elements -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Time range selector functionality
-            const timeRangeButtons = document.querySelectorAll('.time-range-button');
-            const loadingOverlay = document.getElementById('loading-overlay');
-
-            timeRangeButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // Get selected time range
-                    const timeRange = this.getAttribute('data-range');
-
-                    // Show loading overlay
-                    loadingOverlay.classList.add('visible');
-
-                    // Redirect to the same page with the selected time range
-                    window.location.href = `/visualise?time_range=${timeRange}`;
-                });
-            });
-
-            // AJAX functionality for updating mood data without full page reload
-            function fetchMoodData(timeRange) {
-                // Show loading
-                loadingOverlay.classList.add('visible');
-
-                fetch(`/api/mood-data?time_range=${timeRange}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        // Update mood cards with new data
-                        updateMoodCards(data);
-
-                        // Update active button
-                        timeRangeButtons.forEach(btn => {
-                            if (btn.getAttribute('data-range') === timeRange) {
-                                btn.classList.add('active');
-                            } else {
-                                btn.classList.remove('active');
-                            }
-                        });
-
-                        // Hide loading
-                        loadingOverlay.classList.remove('visible');
-
-                        // Update URL without reloading
-                        history.pushState({}, '', `/visualise?time_range=${timeRange}`);
-                    })
-                    .catch(error => {
-                        console.error('Error fetching mood data:', error);
-                        loadingOverlay.classList.remove('visible');
-                    });
-            }
-
-            function updateMoodCards(moodData) {
-                const container = document.getElementById('mood-cards-container');
-
-                // Clear existing cards
-                container.innerHTML = '';
-
-                // Create new mood cards based on data
-                for (const [moodName, mood] of Object.entries(moodData)) {
-                    const card = createMoodCard(moodName, mood);
-                    container.appendChild(card);
-                }
-            }
-
-            function createMoodCard(moodName, mood) {
-                // Get emoji for mood
-                let emoji = '😊';
-                switch (moodName) {
-                    case 'happy': emoji = '😊'; break;
-                    case 'sad': emoji = '😢'; break;
-                    case 'energetic': emoji = '⚡'; break;
-                    case 'chill': emoji = '😎'; break;
-                    case 'nostalgic': emoji = '🕰️'; break;
-                }
-
-                // Create card element
-                const card = document.createElement('div');
-                card.className = 'mood-card';
-
-                // Card content
-                let content = `
-                    <div class="emoji">${emoji}</div>
-                    <h3>${moodName.charAt(0).toUpperCase() + moodName.slice(1)}</h3>
-                    <p>${mood.percentage}% of the time</p>
-                `;
-
-                // Add top track if available
-                if (mood.top_track) {
-                    content += `
-                        <div class="top-song">
-                            <img src="${mood.top_track.image}" alt="Album cover" class="album-cover">
-                            <div class="song-info">
-                                <p class="song-title">${mood.top_track.name}</p>
-                                <p class="song-artist">${mood.top_track.artist}</p>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                // Add recommended songs
-                content += `<div class="recommendations">
-                    <p class="recommend-title">Recommended Songs:</p>
-                    <ul class="recommended-songs">`;
-
-                for (const track of mood.recommended_tracks) {
-                    content += `
-                        <li class="song-item">
-                            <img src="${track.image}" alt="Album cover" class="album-cover">
-                            <div class="song-info">
-                                <p class="song-title">${track.name}</p>
-                                <p class="song-artist">${track.artist}</p>
-                            </div>
-                        </li>
-                    `;
-                }
-
-                content += `</ul></div>`;
-
-                card.innerHTML = content;
-                return card;
-            }
-
-            // Enable AJAX mode for time range buttons
-            timeRangeButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const timeRange = this.getAttribute('data-range');
-                    fetchMoodData(timeRange);
-                });
-            });
-        });
-    </script>
 
 </body>
 </html>
