@@ -39,9 +39,9 @@ class SpotifyAPI:
         self.client_id = app.config['SPOTIFY_CLIENT_ID']
         self.client_secret = app.config['SPOTIFY_CLIENT_SECRET']
         self.redirect_uri = app.config['REDIRECT_URI']
-        self.auth_url = app.config['AUTH_URL']
+        # self.auth_url = app.config['AUTH_URL']
         self.token_url = app.config['TOKEN_URL']
-        self.api_base_url = app.config['API_BASE_URL']
+        # self.api_base_url = app.config['API_BASE_URL']
 
     def get_auth_url(self, state, scope=None):
         """
