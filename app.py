@@ -11,7 +11,7 @@ from flask_wtf.csrf import CSRFProtect
 
 from models import db, User, Track, AudioFeatures
 from utils.spotify import SpotifyAPI
-
+from config import config
 
 # ----------------------------------------------------------
 # Form Classes
@@ -49,16 +49,16 @@ class SignupStepTwoForm(FlaskForm):
 def create_app(config_name='development'):
     app = Flask(__name__)
 
-    # Load configuration from environment or config file
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'change-me-for-production')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI', 'sqlite:///echomood.db')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # Load configuration
+    app_config = config[config_name]
 
-    # Spotify API credentials
-    app.config['SPOTIFY_CLIENT_ID'] = os.getenv('SPOTIFY_CLIENT_ID', '')
-    app.config['SPOTIFY_CLIENT_SECRET'] = os.getenv('SPOTIFY_CLIENT_SECRET', '')
-    app.config['REDIRECT_URI'] = os.getenv('REDIRECT_URI', 'http://localhost:5000/callback')
-    app.config['TOKEN_URL'] = 'https://accounts.spotify.com/api/token'
+    # app_config = config#[config_name]
+    app.config.from_object(app_config)
+
+    # Secret key
+    app.secret_key = app.config.get('SECRET_KEY')
+    print("app.secret_key", app.secret_key)
+
 
     # Enable CSRF protection
     csrf = CSRFProtect(app)

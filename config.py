@@ -5,7 +5,6 @@ load_dotenv()
 # Base configuration shared by all environments
 class Config:
     # Flask configuration
-    # SECRET_KEY = os.environ.get('dev_secret_key')
     SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
     print("secret: ", SECRET_KEY)
     DEBUG = False
@@ -26,17 +25,22 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///spotify_mood.db'  # SQLite database for development
+    SECRET_KEY = os.environ.get('dev_secret_key')
 
 
 # Testing environment configuration
 class TestingConfig(Config):
     TESTING = True
     DEBUG = True
+    SECRET_KEY = os.environ.get('dev_secret_key')
+
 
 
 # Production environment configuration
 class ProductionConfig(Config):
     # Production-specific configurations can go here
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+
     pass
 
 
@@ -49,3 +53,4 @@ config = {
     # Default configuration
     'default': DevelopmentConfig
 }
+
