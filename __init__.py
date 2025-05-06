@@ -401,6 +401,7 @@ def fetch_audio_features(track_ids, access_token):
 
             audio_feature = AudioFeatures.query.filter_by(id=feature['id']).first()
 
+
             if not audio_feature:
                 audio_feature = AudioFeatures(
                     id=feature['id'],
