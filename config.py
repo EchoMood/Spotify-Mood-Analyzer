@@ -6,6 +6,7 @@ load_dotenv()
 class Config:
     # Flask configuration
     SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
+    WTF_CSRF_SECRET_KEY = SECRET_KEY
     print("secret: ", SECRET_KEY)
     DEBUG = False
     TESTING = False
@@ -26,6 +27,7 @@ class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///spotify_mood.db'  # SQLite database for development
     SECRET_KEY = os.environ.get('dev_secret_key')
+    WTF_CSRF_SECRET_KEY = SECRET_KEY
 
 
 # Testing environment configuration
@@ -33,6 +35,7 @@ class TestingConfig(Config):
     TESTING = True
     DEBUG = True
     SECRET_KEY = os.environ.get('dev_secret_key')
+    WTF_CSRF_SECRET_KEY = SECRET_KEY
 
 
 

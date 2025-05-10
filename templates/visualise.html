@@ -77,6 +77,14 @@
         <div class="loading-spinner"></div>
     </div>
 
+    <!-- Logout button-->
+    <div class="logout-container">
+        <form action="{{ url_for('logout') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="logout-button">Logout</button>
+        </form>
+    </div>
+
     <!-- Background Section: Dark cosmic theme -->
     <section class="background">
         
