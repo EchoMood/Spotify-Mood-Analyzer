@@ -467,69 +467,55 @@ def create_app(config_name='development'):
     # Fetch Audio Features Helper Function
     # ----------------------------------------------------------
     def fetch_audio_features(track_ids, access_token):
-        import requests
+        # Use the unified SpotifyAPI class
+        features_map = spotify_api.get_audio_features(access_token, track_ids)
 
-        # Process in batches of 100 (Spotify API limit)
-        for i in range(0, len(track_ids), 100):
-            batch_ids = track_ids[i:i + 100]
-            ids_param = ','.join(batch_ids)
+        for track_id in track_ids:
+            features = features_map.get(track_id)
 
-            headers = {
-                'Authorization': f'Bearer {access_token}'
-            }
-
-            features_response = requests.get(
-                f"https://api.spotify.com/v1/audio-features?ids={ids_param}",
-                headers=headers
-            )
-
-            if not features_response.ok:
+            if not features:
                 continue
 
-            features_data = features_response.json()
+            audio_feature = AudioFeatures.query.filter_by(id=track_id).first()
 
-            for feature in features_data['audio_features']:
-                if not feature:
-                    continue
+            if not audio_feature:
+                audio_feature = AudioFeatures(
+                    id=track_id,
+                    track_id=track_id,
+                    danceability=features['danceability'],
+                    energy=features['energy'],
+                    key=features['key'],
+                    loudness=features['loudness'],
+                    mode=features['mode'],
+                    speechiness=features['speechiness'],
+                    acousticness=features['acousticness'],
+                    instrumentalness=features['instrumentalness'],
+                    liveness=features['liveness'],
+                    valence=features['valence'],
+                    tempo=features['tempo'],
+                    duration_ms=features['duration_ms'],
+                    time_signature=features['time_signature'],
+                    mood=SpotifyAPI.analyze_mood_from_features(features)
+                )
+                db.session.add(audio_feature)
+            else:
+                audio_feature.danceability = features['danceability']
+                audio_feature.energy = features['energy']
+                audio_feature.key = features['key']
+                audio_feature.loudness = features['loudness']
+                audio_feature.mode = features['mode']
+                audio_feature.speechiness = features['speechiness']
+                audio_feature.acousticness = features['acousticness']
+                audio_feature.instrumentalness = features['instrumentalness']
+                audio_feature.liveness = features['liveness']
+                audio_feature.valence = features['valence']
+                audio_feature.tempo = features['tempo']
+                audio_feature.duration_ms = features['duration_ms']
+                audio_feature.time_signature = features['time_signature']
+                audio_feature.mood = SpotifyAPI.analyze_mood_from_features(features)
 
-                audio_feature = AudioFeatures.query.filter_by(id=feature['id']).first()
+        db.session.commit()
 
-                if not audio_feature:
-                    audio_feature = AudioFeatures(
-                        id=feature['id'],
-                        track_id=feature['id'],
-                        danceability=feature['danceability'],
-                        energy=feature['energy'],
-                        key=feature['key'],
-                        loudness=feature['loudness'],
-                        mode=feature['mode'],
-                        speechiness=feature['speechiness'],
-                        acousticness=feature['acousticness'],
-                        instrumentalness=feature['instrumentalness'],
-                        liveness=feature['liveness'],
-                        valence=feature['valence'],
-                        tempo=feature['tempo'],
-                        duration_ms=feature['duration_ms'],
-                        time_signature=feature['time_signature']
-                    )
-                    db.session.add(audio_feature)
-                else:
-                    # Update existing features
-                    audio_feature.danceability = feature['danceability']
-                    audio_feature.energy = feature['energy']
-                    audio_feature.key = feature['key']
-                    audio_feature.loudness = feature['loudness']
-                    audio_feature.mode = feature['mode']
-                    audio_feature.speechiness = feature['speechiness']
-                    audio_feature.acousticness = feature['acousticness']
-                    audio_feature.instrumentalness = feature['instrumentalness']
-                    audio_feature.liveness = feature['liveness']
-                    audio_feature.valence = feature['valence']
-                    audio_feature.tempo = feature['tempo']
-                    audio_feature.duration_ms = feature['duration_ms']
-                    audio_feature.time_signature = feature['time_signature']
-
-            db.session.commit()
 
     # ----------------------------------------------------------
     # Logout Route

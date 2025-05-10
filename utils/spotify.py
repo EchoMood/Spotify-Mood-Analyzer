@@ -154,3 +154,68 @@ class SpotifyAPI:
             return response.json()
         else:
             return None
+        
+    def get_audio_features(self, access_token, track_ids):
+        """
+        Retrieve audio features for a list of track IDs.
+
+        Args:
+            access_token (str): Valid Spotify access token.
+            track_ids (list): List of Spotify track IDs.
+
+        Returns:
+            dict: Mapping of track ID to its audio features dictionary.
+        """
+        headers = {
+            'Authorization': f'Bearer {access_token}'
+        }
+
+        features_map = {}
+
+        # Spotify allows up to 100 track IDs per request
+        for i in range(0, len(track_ids), 100):
+            batch = track_ids[i:i+100]
+            ids_param = ",".join(batch)
+
+            response = requests.get(
+                f"{self.api_base_url}audio-features",
+                headers=headers,
+                params={'ids': ids_param}
+            )
+
+            if response.status_code == 200:
+                data = response.json().get('audio_features', [])
+                for item in data:
+                    if item:
+                        features_map[item['id']] = item
+            else:
+                print("Failed to fetch audio features:", response.text)
+
+        return features_map
+
+    @staticmethod
+    def analyze_mood_from_features(features):
+        """
+        Analyze mood from audio feature data.
+
+        Args:
+            features (dict): Audio features of a track.
+
+        Returns:
+            str: Estimated mood category.
+        """
+        if not features:
+            return "Unknown"
+
+        if features['valence'] > 0.7 and features['energy'] > 0.6:
+            return "Happy"
+        elif features['valence'] < 0.3 and features['acousticness'] > 0.5:
+            return "Sad"
+        elif features['danceability'] > 0.4 and features['energy'] < 0.4:
+            return "Chill"
+        elif features['energy'] > 0.8 and features['valence'] < 0.4:
+            return "Angry"
+        elif features['instrumentalness'] > 0.7 and features['speechiness'] < 0.2:
+            return "Focused"
+        else:
+            return "Mixed"
