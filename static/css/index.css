@@ -160,8 +160,9 @@
         }
 
         .spotify-logo {
-            width: 180px;
-            height: 180px;
+            width: auto;
+            height: 60px;
+            max-width: 100%;
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
             transition: all 0.5s ease;
         }
