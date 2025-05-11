@@ -219,3 +219,31 @@ class SpotifyAPI:
             return "Focused"
         else:
             return "Mixed"
+        
+
+    def get_artists_genres(self, access_token, artist_ids):
+        """
+        Get genres for a list of artist IDs.
+
+        Returns:
+            dict: {artist_id: [genres]}
+        """
+        headers = {'Authorization': f'Bearer {access_token}'}
+        genres_map = {}
+
+        for i in range(0, len(artist_ids), 50):
+            batch = artist_ids[i:i+50]
+            response = requests.get(
+                f"{self.api_base_url}artists",
+                headers=headers,
+                params={"ids": ",".join(batch)}
+            )
+            if response.status_code == 200:
+                artists = response.json().get("artists", [])
+                for artist in artists:
+                    genres_map[artist['id']] = artist.get('genres', [])
+            else:
+                print("Failed to fetch artist genres:", response.text)
+
+        return genres_map
+
