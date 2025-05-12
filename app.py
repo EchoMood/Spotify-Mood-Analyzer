@@ -138,6 +138,32 @@ def create_app(config_name='development'):
             session.clear()
             flash('Account created successfully!', 'success')
             return redirect(url_for('login'))
+        
+        if 'spotify_user_id' in session:
+            # Spotify signup continuation
+            user_id = session['spotify_user_id']
+            display_name = session.get('display_name', '')
+            access_token = session.get('access_token')
+            refresh_token = session.get('refresh_token')
+            token_expiry = datetime.fromisoformat(session.get('token_expiry'))
+
+            new_user = User(
+                id=user_id,
+                email=form.email.data,
+                display_name=display_name,
+                first_name=display_name.split()[0] if display_name else '',
+                access_token=access_token,
+                refresh_token=refresh_token,
+                token_expiry=token_expiry,
+                last_login=datetime.utcnow()
+            )
+            new_user.set_password(form.password.data)
+
+            db.session.add(new_user)
+            db.session.commit()
+            session.clear()
+            flash("Account created successfully!", "success")
+            return redirect(url_for('login'))
 
         return render_template('signup_cred.html', form=form)
 
@@ -250,10 +276,23 @@ def create_app(config_name='development'):
             if not user.email and 'email' in user_data:
                 user.email = user_data.get('email')
         else:
-            # Create new user from Spotify data
+            # Check if email is returned by Spotify
+            if not user_data.get('email'):
+                # Store Spotify data in session and redirect to signup credential page
+                session['spotify_id'] = user_data['id']
+                session['display_name'] = user_data.get('display_name', '')
+                session['access_token'] = access_token
+                session['refresh_token'] = refresh_token
+                session['token_expiry'] = token_expiry.isoformat()  # Store as string for JSON compatibility
+                session['spotify_login_pending'] = True  # flag to signal pending signup
+
+                flash('We couldn’t retrieve your email from Spotify. Please complete your signup.', 'warning')
+                return redirect(url_for('signup_login_credentials'))
+
+            # If email exists, proceed with user creation
             user = User(
                 id=user_data['id'],
-                email=user_data.get('email', ''),
+                email=user_data.get('email'),
                 display_name=user_data.get('display_name', ''),
                 first_name=user_data.get('display_name', '').split()[0] if user_data.get('display_name') else '',
                 access_token=access_token,
@@ -262,7 +301,7 @@ def create_app(config_name='development'):
                 last_login=datetime.utcnow()
             )
             db.session.add(user)
-
+            
         db.session.commit()
 
         # Store user info in session
