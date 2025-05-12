@@ -174,7 +174,9 @@ class SpotifyAPI:
 
         # Spotify allows up to 100 track IDs per request
         for i in range(0, len(track_ids), 100):
+
             batch = track_ids[i:i + 100]
+
             ids_param = ",".join(batch)
 
             response = requests.get(
@@ -245,3 +247,4 @@ class SpotifyAPI:
                 print("Failed to fetch artist genres:", response.text)
 
         return genres_map
+

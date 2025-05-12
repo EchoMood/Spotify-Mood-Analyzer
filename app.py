@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 
 from flask import Flask, render_template, redirect, flash, url_for, session, request, jsonify
 from flask_wtf import FlaskForm
+from collections import Counter
+
 from wtforms import EmailField, PasswordField, SubmitField, StringField, IntegerField
 from wtforms.validators import DataRequired, Email, Optional, EqualTo, NumberRange
 from flask_wtf.csrf import CSRFProtect
@@ -219,6 +221,7 @@ def create_app(config_name='development'):
         refresh_token = token_data['refresh_token']
         expires_in = token_data['expires_in']
         token_expiry = datetime.utcnow() + timedelta(seconds=expires_in)
+        session['access_token'] = access_token
 
         # Get user profile
         user_data = spotify_api.get_user_profile(access_token)
@@ -263,8 +266,8 @@ def create_app(config_name='development'):
         else:
             session['first_name'] = user.display_name.split()[0] if user.display_name else 'User'
 
-        # Fetch user's Spotify data
-        fetch_and_store_user_data(user.id, spotify_api)
+        mood_counts = fetch_and_store_user_data(user.id, spotify_api)
+        session['mood_counts'] = mood_counts
 
         # Redirect to visualization
         return redirect(url_for('visualise'))
@@ -274,6 +277,8 @@ def create_app(config_name='development'):
     # ----------------------------------------------------------
     @app.route('/visualise')
     def visualise():
+        print("Access Token from session:", session.get('access_token'))
+
         # Check if user is logged in
         if 'user_id' not in session:
             flash('Please log in to view your visualisation.', 'warning')
@@ -290,36 +295,30 @@ def create_app(config_name='development'):
         # Get time range from query parameters (default to medium_term)
         time_range = request.args.get('time_range', 'medium_term')
 
-        # Generate or fetch mood data
-        # In a real app, this would come from your database or Spotify API
-        mood_data = {
-            "happy": {
-                "percentage": 35,
-                "top_track": {
-                    "name": "Good Feeling",
-                    "artist": "Flo Rida",
-                    "image": "https://i.scdn.co/image/ab67616d0000b273c8f96a1b8bfcf4d821fbbb3a"
-                },
-                "recommended_tracks": [
-                    {
-                        "name": "Happy",
-                        "artist": "Pharrell Williams",
-                        "image": "https://i.scdn.co/image/ab67616d0000b2734c55ac0c5e7be8c6394d7a21"
-                    },
-                    {
-                        "name": "Can't Stop the Feeling!",
-                        "artist": "Justin Timberlake",
-                        "image": "https://i.scdn.co/image/ab67616d0000b273a4547d2fb82a280be3ddba55"
-                    },
-                    {
-                        "name": "Uptown Funk",
-                        "artist": "Mark Ronson ft. Bruno Mars",
-                        "image": "https://i.scdn.co/image/ab67616d0000b2736b3d4c74ca886c9803af48e0"
-                    }
-                ]
-            },
-            # ... (rest of the mood data remains the same)
-        }
+        # # Fetch all mood labels for this user from the AudioFeatures table
+        # all_features = AudioFeatures.query.join(Track, AudioFeatures.track_id == Track.id).filter(
+        #     Track.user_id == user_id
+        # ).all()
+
+        # # Count how many times each mood appears
+        # mood_counts = Counter(f.mood for f in all_features)
+
+        # ✅ Replace old audio_features logic with this:
+        mood_counts = session.get('mood_counts', {})
+        print("🔍 mood_counts:", mood_counts)
+
+        total = sum(mood_counts.values()) or 1  # avoid division by zero
+
+        # Build mood_data with percentage breakdown
+        mood_data = {}
+        for mood, count in mood_counts.items():
+            mood_data[mood.lower()] = {
+                "percentage": round(100 * count / total),  # Convert to percentage
+                "top_track": None,  # TODO: You can add top track per mood here
+                "recommended_tracks": []  # TODO: You can add recommendations here
+            }
+
+
 
         # Generate or fetch personality data
         personality_data = {
@@ -336,10 +335,11 @@ def create_app(config_name='development'):
         }
 
         return render_template('visualise.html',
-                               first_name=session.get('first_name', 'User'),
-                               time_range=time_range,
-                               mood_data=mood_data,
-                               personality=personality_data)
+                                first_name=session.get('first_name', 'User'),
+                                time_range=time_range,
+                                mood_data=mood_data,
+                                personality=personality_data)
+
 
     # ----------------------------------------------------------
     # API Endpoint for Mood Data (AJAX)
@@ -377,6 +377,8 @@ def create_app(config_name='development'):
         # Time ranges to fetch
         time_ranges = ['short_term', 'medium_term', 'long_term']
 
+        mood_counts = Counter()
+
         for time_range in time_ranges:
             # Fetch top tracks for this time range
             tracks_data = spotify_api.get_top_tracks(user.access_token, time_range)
@@ -386,13 +388,19 @@ def create_app(config_name='development'):
 
             # Store track information
             track_ids = []
+            artist_ids = []
+
 
             for i, item in enumerate(tracks_data['items']):
+                
                 existing_track = Track.query.filter_by(
                     id=item['id'],
                     user_id=user.id,
                     time_range=time_range
                 ).first()
+
+                artist_id = item['artists'][0]['id']
+                artist_ids.append(artist_id)
 
                 if existing_track:
                     # Update existing track
@@ -414,6 +422,9 @@ def create_app(config_name='development'):
                     )
                     db.session.add(track)
 
+                    
+
+
                 track_ids.append(item['id'])
 
             db.session.commit()
@@ -421,7 +432,44 @@ def create_app(config_name='development'):
             # Fetch audio features in batches
             fetch_audio_features(track_ids, user.access_token)
 
-        return True
+            # After storing tracks and features, fetch artist genres
+            genre_map = spotify_api.get_artists_genres(user.access_token, artist_ids)
+
+            print(f"[DEBUG] artist_ids: {artist_ids}")
+            print(f"[DEBUG] genre_map: {genre_map}")
+
+            GENRE_TO_MOOD = {
+                'pop': 'Happy',
+                'dance pop': 'Happy',
+                'sad indie': 'Sad',
+                'emo': 'Sad',
+                'chillwave': 'Chill',
+                'ambient': 'Chill',
+                'metal': 'Angry',
+                'rap': 'Focused',
+                'classical': 'Focused',
+                'hip hop': 'Focused',
+                'rock': 'Happy',
+                'trap': 'Angry'
+            }
+
+            
+
+            for artist_id in artist_ids:
+                genres = genre_map.get(artist_id, [])
+                matched = False
+                for genre in genres:
+                    for key in GENRE_TO_MOOD:
+                        if key in genre:
+                            mood = GENRE_TO_MOOD[key]
+                            mood_counts[mood] += 1
+                            matched = True
+                            break
+                    if matched:
+                        break
+
+
+        return dict(mood_counts)
 
     # ----------------------------------------------------------
     # Refresh Token Helper Function
@@ -454,6 +502,7 @@ def create_app(config_name='development'):
         # Update user's access token and expiry
         user.access_token = token_data['access_token']
 
+
         # Refresh token is only provided if it has changed
         if 'refresh_token' in token_data:
             user.refresh_token = token_data['refresh_token']
@@ -467,69 +516,57 @@ def create_app(config_name='development'):
     # Fetch Audio Features Helper Function
     # ----------------------------------------------------------
     def fetch_audio_features(track_ids, access_token):
-        import requests
+        print(f"[DEBUG] Fetching audio features for {len(track_ids)} tracks")
+        # Use the unified SpotifyAPI class
+        features_map = spotify_api.get_audio_features(access_token, track_ids)
+        print(f"[DEBUG] Received features for {len(features_map)} tracks")
 
-        # Process in batches of 100 (Spotify API limit)
-        for i in range(0, len(track_ids), 100):
-            batch_ids = track_ids[i:i + 100]
-            ids_param = ','.join(batch_ids)
+        for track_id in track_ids:
+            features = features_map.get(track_id)
 
-            headers = {
-                'Authorization': f'Bearer {access_token}'
-            }
-
-            features_response = requests.get(
-                f"https://api.spotify.com/v1/audio-features?ids={ids_param}",
-                headers=headers
-            )
-
-            if not features_response.ok:
+            if not features:
                 continue
 
-            features_data = features_response.json()
+            audio_feature = AudioFeatures.query.filter_by(id=track_id).first()
 
-            for feature in features_data['audio_features']:
-                if not feature:
-                    continue
+            if not audio_feature:
+                audio_feature = AudioFeatures(
+                    id=track_id,
+                    track_id=track_id,
+                    danceability=features['danceability'],
+                    energy=features['energy'],
+                    key=features['key'],
+                    loudness=features['loudness'],
+                    mode=features['mode'],
+                    speechiness=features['speechiness'],
+                    acousticness=features['acousticness'],
+                    instrumentalness=features['instrumentalness'],
+                    liveness=features['liveness'],
+                    valence=features['valence'],
+                    tempo=features['tempo'],
+                    duration_ms=features['duration_ms'],
+                    time_signature=features['time_signature'],
+                    mood=SpotifyAPI.analyze_mood_from_features(features)
+                )
+                db.session.add(audio_feature)
+            else:
+                audio_feature.danceability = features['danceability']
+                audio_feature.energy = features['energy']
+                audio_feature.key = features['key']
+                audio_feature.loudness = features['loudness']
+                audio_feature.mode = features['mode']
+                audio_feature.speechiness = features['speechiness']
+                audio_feature.acousticness = features['acousticness']
+                audio_feature.instrumentalness = features['instrumentalness']
+                audio_feature.liveness = features['liveness']
+                audio_feature.valence = features['valence']
+                audio_feature.tempo = features['tempo']
+                audio_feature.duration_ms = features['duration_ms']
+                audio_feature.time_signature = features['time_signature']
+                audio_feature.mood = SpotifyAPI.analyze_mood_from_features(features)
 
-                audio_feature = AudioFeatures.query.filter_by(id=feature['id']).first()
+        db.session.commit()
 
-                if not audio_feature:
-                    audio_feature = AudioFeatures(
-                        id=feature['id'],
-                        track_id=feature['id'],
-                        danceability=feature['danceability'],
-                        energy=feature['energy'],
-                        key=feature['key'],
-                        loudness=feature['loudness'],
-                        mode=feature['mode'],
-                        speechiness=feature['speechiness'],
-                        acousticness=feature['acousticness'],
-                        instrumentalness=feature['instrumentalness'],
-                        liveness=feature['liveness'],
-                        valence=feature['valence'],
-                        tempo=feature['tempo'],
-                        duration_ms=feature['duration_ms'],
-                        time_signature=feature['time_signature']
-                    )
-                    db.session.add(audio_feature)
-                else:
-                    # Update existing features
-                    audio_feature.danceability = feature['danceability']
-                    audio_feature.energy = feature['energy']
-                    audio_feature.key = feature['key']
-                    audio_feature.loudness = feature['loudness']
-                    audio_feature.mode = feature['mode']
-                    audio_feature.speechiness = feature['speechiness']
-                    audio_feature.acousticness = feature['acousticness']
-                    audio_feature.instrumentalness = feature['instrumentalness']
-                    audio_feature.liveness = feature['liveness']
-                    audio_feature.valence = feature['valence']
-                    audio_feature.tempo = feature['tempo']
-                    audio_feature.duration_ms = feature['duration_ms']
-                    audio_feature.time_signature = feature['time_signature']
-
-            db.session.commit()
 
     # ----------------------------------------------------------
     # Logout Route

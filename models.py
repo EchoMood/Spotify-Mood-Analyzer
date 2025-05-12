@@ -79,3 +79,4 @@ class AudioFeatures(db.Model):
     tempo = db.Column(db.Float)
     duration_ms = db.Column(db.Integer)
     time_signature = db.Column(db.Integer)
+    mood = db.Column(db.String(20))
