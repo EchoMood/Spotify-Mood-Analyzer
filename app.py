@@ -61,6 +61,8 @@ def create_app(config_name='development'):
     app.secret_key = app.config.get('SECRET_KEY')
     print("app.secret_key", app.secret_key)
 
+    from flask_migrate import Migrate
+    migrate = Migrate(app, db)
 
     # Enable CSRF protection
     csrf = CSRFProtect(app)
@@ -135,11 +137,71 @@ def create_app(config_name='development'):
 
             # Clear session data and redirect
             session.clear()
-            flash('Account created successfully!', 'success')
-            return redirect(url_for('login'))
+            # Store user info in session for login
+            session['user_id'] = new_user.id
+            session['user_email'] = new_user.email
+            session['first_name'] = new_user.first_name
+
+            flash('Account created successfully! Connect your Spotify account to unlock all features.', 'success')
+            # new dashboard with connect via spotify option
+            return redirect(url_for('dashboard'))
+            # return redirect(url_for('login'))
 
         return render_template('signup_cred.html', form=form)
 
+    # new dashboard with connect via spotify option
+    @app.route('/dashboard')
+    def dashboard():
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+
+        user = User.query.get(session['user_id'])
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
+
+        # Get friends
+        friends_sent = Friend.query.filter_by(user_id=user.id, status='accepted').all()
+        friends_received = Friend.query.filter_by(friend_id=user.id, status='accepted').all()
+
+        # Get pending requests
+        pending_requests = Friend.query.filter_by(friend_id=user.id, status='pending').all()
+
+        # Process friends list
+        friends_list = []
+        for f in friends_sent:
+            friend_user = User.query.get(f.friend_id)
+            if friend_user:
+                friends_list.append({
+                    'id': friend_user.id,
+                    'name': friend_user.display_name or f"{friend_user.first_name} {friend_user.last_name}".strip(),
+                    'share_data': f.share_data
+                })
+
+        for f in friends_received:
+            friend_user = User.query.get(f.user_id)
+            if friend_user:
+                friends_list.append({
+                    'id': friend_user.id,
+                    'name': friend_user.display_name or f"{friend_user.first_name} {friend_user.last_name}".strip(),
+                    'share_data': f.share_data
+                })
+
+        # Process pending requests
+        pending_list = []
+        for req in pending_requests:
+            requester = User.query.get(req.user_id)
+            if requester:
+                pending_list.append({
+                    'id': req.id,
+                    'user_id': requester.id,
+                    'name': requester.display_name or f"{requester.first_name} {requester.last_name}".strip()
+                })
+
+        return render_template('dashboard.html',
+                               user=user,
+                               friends=friends_list,
+                               pending_requests=pending_list)
     # ----------------------------------------------------------
     # Traditional Login Route
     # ----------------------------------------------------------
@@ -163,8 +225,8 @@ def create_app(config_name='development'):
                 session['user_email'] = user.email
                 session['first_name'] = user.first_name
 
-                # Redirect to visualization
-                return redirect(url_for('visualise'))
+                # Redirect to dashboard
+                return redirect(url_for('dashboard'))
             else:
                 flash('Invalid email or password. Please try again.', 'danger')
 
@@ -184,6 +246,7 @@ def create_app(config_name='development'):
 
         # Get authorization URL from Spotify API utility
         auth_url = spotify_api.get_auth_url(state, scope)
+        print("AUTH URL", auth_url)
 
         return redirect(auth_url)
 
@@ -223,35 +286,65 @@ def create_app(config_name='development'):
         token_expiry = datetime.utcnow() + timedelta(seconds=expires_in)
         session['access_token'] = access_token
 
-        # Get user profile
+        # Get user profile using Spotify API
         user_data = spotify_api.get_user_profile(access_token)
+
+        # Check if we're linking an existing account
+        linking = session.pop('linking', False)
+        if linking and 'user_id' in session:
+            # User is already logged in, just link the Spotify account
+            existing_user = User.query.get(session['user_id'])
+
+            if existing_user:
+                existing_user.access_token = access_token
+                existing_user.refresh_token = refresh_token
+                existing_user.token_expiry = token_expiry
+                existing_user.spotify_id = user_data['id']
+                db.session.commit()
+
+                flash('Spotify account linked successfully!', 'success')
+                return redirect(url_for('dashboard'))
 
         if not user_data:
             flash('Failed to retrieve user information.', 'danger')
             return redirect(url_for('index'))
 
-        # Save or update user in database
+        # First check if a user with this Spotify ID exists
         user = User.query.filter_by(id=user_data['id']).first()
 
+        # If not, check if a user with this email exists
+        if not user and 'email' in user_data and user_data['email']:
+            user = User.query.filter_by(email=user_data['email']).first()
+
         if user:
-            # Update existing user
+            # Update existing user with Spotify data
             user.access_token = access_token
             user.refresh_token = refresh_token
             user.token_expiry = token_expiry
+
+            # If this was an email-only user before, add the Spotify ID
+            if not user.id.startswith('spotify:'):
+                # We can't change the primary key, so we'll link via other fields
+                user.spotify_id = user_data['id']
+
             user.last_login = datetime.utcnow()
-            # If existing user logged in through Spotify but didn't have an email yet
-            if not user.email and 'email' in user_data:
-                user.email = user_data.get('email')
         else:
             # Create new user from Spotify data
+            display_name = user_data.get('display_name', '')
+            first_name = display_name.split()[0] if display_name else ''
+            last_name = ' '.join(display_name.split()[1:]) if len(display_name.split()) > 1 else ''
+
             user = User(
                 id=user_data['id'],
+                spotify_id=user_data['id'],
                 email=user_data.get('email', ''),
-                display_name=user_data.get('display_name', ''),
-                first_name=user_data.get('display_name', '').split()[0] if user_data.get('display_name') else '',
+                display_name=display_name,
+                first_name=first_name,
+                last_name=last_name,
                 access_token=access_token,
                 refresh_token=refresh_token,
                 token_expiry=token_expiry,
+                registration_method='spotify',
                 last_login=datetime.utcnow()
             )
             db.session.add(user)
@@ -261,16 +354,53 @@ def create_app(config_name='development'):
         # Store user info in session
         session['user_id'] = user.id
         session['user_email'] = user.email
-        if user.first_name:
-            session['first_name'] = user.first_name
-        else:
-            session['first_name'] = user.display_name.split()[0] if user.display_name else 'User'
+        session['first_name'] = user.first_name or user.display_name.split()[0] if user.display_name else 'User'
 
-        mood_counts = fetch_and_store_user_data(user.id, spotify_api)
-        session['mood_counts'] = mood_counts
+        # If user doesn't have a password (Spotify-only registration), redirect to set one
+        if user.registration_method == 'spotify' and not user.password:
+            flash('Please complete your account setup by setting a password.', 'info')
+            return redirect(url_for('complete_account'))
 
-        # Redirect to visualization
+        # Otherwise proceed to visualization
         return redirect(url_for('visualise'))
+
+    # users need to complete account if they haven't connected spotify but have made an account
+    @app.route('/complete_account', methods=['GET', 'POST'])
+    def complete_account():
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+
+        user = User.query.get(session['user_id'])
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
+
+        # If user already has a password, redirect
+        if user.password:
+            return redirect(url_for('visualise'))
+
+        # Create a form for password
+        class CompleteAccountForm(FlaskForm):
+            password = PasswordField('Password', validators=[
+                DataRequired(),
+                # Add password strength requirements if needed
+            ])
+            confirm_password = PasswordField('Confirm Password', validators=[
+                DataRequired(),
+                EqualTo('password', message='Passwords must match')
+            ])
+            submit = SubmitField('Complete Account')
+
+        form = CompleteAccountForm()
+
+        if form.validate_on_submit():
+            user.set_password(form.password.data)
+            db.session.commit()
+            flash('Account setup completed! You can now log in using either Spotify or your email and password.',
+                  'success')
+            return redirect(url_for('visualise'))
+
+        return render_template('complete_account.html', form=form, user=user)
 
     # ----------------------------------------------------------
     # Visualization Route
@@ -338,7 +468,46 @@ def create_app(config_name='development'):
                                 first_name=session.get('first_name', 'User'),
                                 time_range=time_range,
                                 mood_data=mood_data,
-                                personality=personality_data)
+                               personality=personality_data)
+
+    # route to link spotify account
+    @app.route('/link/spotify')
+    def link_spotify():
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+
+        # Generate state for CSRF protection
+        state = str(uuid.uuid4())
+        session['state'] = state
+        session['linking'] = True  # Flag to indicate we're linking accounts
+
+        # Define scopes needed for the application
+        scope = 'user-top-read user-read-private user-read-recently-played'
+
+        # Get authorization URL from Spotify API utility
+        auth_url = spotify_api.get_auth_url(state, scope)
+
+        return redirect(auth_url)
+
+    # route to unlink spotify account
+    @app.route('/unlink/spotify', methods=['POST'])
+    def unlink_spotify():
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+
+        user = User.query.get(session['user_id'])
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
+
+        # Reset Spotify-related fields
+        user.access_token = None
+        user.refresh_token = None
+        user.token_expiry = None
+        db.session.commit()
+
+        flash('Spotify account unlinked successfully.', 'success')
+        return redirect(url_for('dashboard'))
 
     # ----------------------------------------------------------
     # Friends Routes

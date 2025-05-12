@@ -25,7 +25,7 @@ class Config:
 # Development environment configuration
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///spotify_mood.db'  # SQLite database for development
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///app.db'  # SQLite database for development
     SECRET_KEY = os.environ.get('dev_secret_key')
     WTF_CSRF_SECRET_KEY = SECRET_KEY
 

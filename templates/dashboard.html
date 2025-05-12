@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Spotify Mood Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <style>
+        /* Additional styles for the friend management section */
+        .friends-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+        }
+
+        .request-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .request-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .friend-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .friend-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .friend-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .accept-btn {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+
+        .reject-btn {
+            background-color: #E74C3C;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+
+        .sharing-enabled {
+            color: #1DB954;
+            font-size: 0.9em;
+        }
+
+        .sharing-disabled {
+            color: #E74C3C;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Your Dashboard</h1>
+        </header>
+
+        <section class="dashboard-container">
+            <h2>Welcome, {{ user.first_name }}!</h2>
+
+            {% if not user.access_token %}
+                <div class="connect-spotify">
+                    <h3>Connect Spotify</h3>
+                    <p>To analyze your music mood and get personalized recommendations, connect your Spotify account.</p>
+                    <a href="{{ url_for('oauth_spotify') }}" class="get-started-btn">Connect Spotify</a>
+                </div>
+            {% else %}
+                <div class="spotify-connected">
+                    <h3>Spotify Connected!</h3>
+                    <p>Your Spotify account is connected. View your mood analysis or explore your friends' music tastes.</p>
+                    <a href="{{ url_for('visualise') }}" class="get-started-btn">View My Mood Analysis</a>
+                </div>
+            {% endif %}
+
+            <!-- Friend Requests Section -->
+            <div class="friends-container">
+                <h3>Friend Requests</h3>
+
+                {% if pending_requests %}
+                    <p>You have {{ pending_requests|length }} pending friend request(s):</p>
+
+                    {% for request in pending_requests %}
+                        <div class="request-card">
+                            <div>
+                                <h4>{{ request.name }}</h4>
+                            </div>
+                            <div class="request-actions">
+                                <form action="{{ url_for('accept_friend') }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="request_id" value="{{ request.id }}">
+                                    <button type="submit" class="accept-btn">Accept</button>
+                                </form>
+
+                                <form action="{{ url_for('reject_friend') }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="request_id" value="{{ request.id }}">
+                                    <button type="submit" class="reject-btn">Reject</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No pending friend requests</p>
+                {% endif %}
+
+                <a href="{{ url_for('search_friends') }}" class="get-started-btn" style="display: inline-block; margin-top: 15px;">Find Friends</a>
+            </div>
+
+            <!-- Friends List Section -->
+            <div class="friends-container">
+                <h3>Your Friends</h3>
+
+                {% if friends %}
+                    <div class="friend-list">
+                        {% for friend in friends %}
+                            <div class="friend-card">
+                                <h4>{{ friend.name }}</h4>
+                                <p>
+                                    {% if friend.share_data %}
+                                        <span class="sharing-enabled">✓ Sharing enabled</span>
+                                    {% else %}
+                                        <span class="sharing-disabled">✗ Sharing disabled</span>
+                                    {% endif %}
+                                </p>
+                                <a href="{{ url_for('friend_visualise', friend_id=friend.id) }}" class="get-started-btn" style="font-size: 0.9em; padding: 6px 12px; display: inline-block; margin-top: 10px;">View Profile</a>
+
+                                <form action="{{ url_for('toggle_share') }}" method="POST" style="margin-top: 10px;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="friend_id" value="{{ friend.id }}">
+                                    <button type="submit" class="get-started-btn" style="font-size: 0.8em; padding: 6px 12px; background-color: rgba(255, 255, 255, 0.2);">
+                                        {% if friend.share_data %}
+                                            Disable Sharing
+                                        {% else %}
+                                            Enable Sharing
+                                        {% endif %}
+                                    </button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p>You don't have any friends yet</p>
+                    <a href="{{ url_for('search_friends') }}" class="get-started-btn" style="display: inline-block; margin-top: 10px;">Find Friends</a>
+                {% endif %}
+            </div>
+
+            <!-- Account Settings Section -->
+            <div class="account-settings friends-container">
+                <h3>Account Settings</h3>
+                <p>Manage your account details and preferences.</p>
+
+                {% if user.access_token %}
+                    <form action="{{ url_for('unlink_spotify') }}" method="POST" style="display:inline; margin-top: 10px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="get-started-btn" style="background-color: #E74C3C;">Disconnect Spotify</button>
+                    </form>
+                {% endif %}
+
+                <form action="{{ url_for('logout') }}" method="POST" style="display:inline; margin-left: 10px; margin-top: 10px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="get-started-btn" style="background-color: #7f8c8d;">Logout</button>
+                </form>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

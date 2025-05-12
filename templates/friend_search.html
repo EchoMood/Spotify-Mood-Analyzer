@@ -108,10 +108,10 @@
                         <div class="user-actions">
                             {% if user.status == 'none' %}
                                 <form action="{{ url_for('add_friend') }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="friend_id" value="{{ user.id }}">
                                     <button type="submit" class="button-primary">Send Friend Request</button>
-                                </form>
-                            {% elif user.status == 'pending' %}
+                                </form>                            {% elif user.status == 'pending' %}
                                 <span class="status-text">Friend request pending</span>
                             {% elif user.status == 'accepted' %}
                                 <span class="status-text">Already friends</span>
