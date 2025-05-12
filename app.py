@@ -1,4 +1,5 @@
 # app.py – Integrated EchoMood Flask Application
+import socket
 import os
 import uuid
 from datetime import datetime, timedelta
@@ -193,15 +194,19 @@ def create_app(config_name='development'):
     @app.route('/callback')
     def callback():
         # Verify state to prevent CSRF attacks
+        print("State from request:", request.args.get('state'))
         if request.args.get('state') != session.get('state'):
             flash('Authentication error. Please try again.', 'danger')
             return redirect(url_for('index'))
-
+        print("State verified successfully.")
+        
         # Check for errors in the callback
         if request.args.get('error'):
             flash('Authentication was denied.', 'warning')
             return redirect(url_for('index'))
-
+        print("No error in callback.")
+        # Check if the code is present in the callback
+        print("Code from request:", request.args.get('code'))
         # Get the authorization code
         code = request.args.get('code')
 
@@ -211,7 +216,8 @@ def create_app(config_name='development'):
 
         # Exchange code for access token
         token_data = spotify_api.get_access_token(code)
-
+        print("Token data:", token_data)
+        # Check if token data is valid
         if not token_data:
             flash('Failed to authenticate with Spotify.', 'danger')
             return redirect(url_for('index'))
@@ -225,7 +231,8 @@ def create_app(config_name='development'):
 
         # Get user profile
         user_data = spotify_api.get_user_profile(access_token)
-
+        print("User data:", user_data)
+        # Check if user data is valid
         if not user_data:
             flash('Failed to retrieve user information.', 'danger')
             return redirect(url_for('index'))
@@ -614,6 +621,17 @@ def create_app(config_name='development'):
 
     return app
 
+# ----------------------------------------------------------
+# Helper Function to Find Free Port
+# ----------------------------------------------------------
+def find_free_port(default=5000, max_tries=10):
+    port = default
+    for _ in range(max_tries):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            if sock.connect_ex(('127.0.0.1', port)) != 0:
+                return port
+            port += 1
+    raise OSError("No available port found.")
 
 # Create app instance for running directly
 app = create_app()
@@ -621,5 +639,6 @@ app = create_app()
 # Main Application Entry Point
 if __name__ == '__main__':
     # for production
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', find_free_port()))
+    # for local testing
     app.run(host='0.0.0.0', port=port, debug=False)

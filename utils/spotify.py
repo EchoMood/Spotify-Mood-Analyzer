@@ -66,6 +66,9 @@ class SpotifyAPI:
         }
 
         auth_url = f"{self.auth_url}?{urlencode(params)}"
+        
+        # ✅ Add this debug print
+        print(f"🔍 Generated Spotify Auth URL: {auth_url}")
         return auth_url
 
     def get_access_token(self, code):
@@ -93,10 +96,27 @@ class SpotifyAPI:
             'redirect_uri': self.redirect_uri
         }
 
-        response = requests.post(self.token_url, headers=headers, data=data)
-        if response.status_code == 200:
-            return response.json()
-        else:
+        print("\n🔑 [DEBUG] Sending token request to Spotify:")
+        print("🔸 client_id:", self.client_id)
+        print("🔸 client_secret:",self.client_secret)
+        print("🔸 redirect_uri:", self.redirect_uri)
+        print("🔸 token_url:", self.token_url)
+        print("🔸 code:", code[:10] + "..." if code else "None")  # mask long code
+        print("🔸 headers:", headers)
+        print("🔸 data:", data)
+
+        try:
+            response = requests.post(self.token_url, headers=headers, data=data)
+            print("📡 Response status:", response.status_code)
+            print("📡 Response body:", response.text)
+
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print("❌ Failed to exchange code. Spotify error:", response.json())
+                return None
+        except Exception as e:
+            print("🚨 Exception during token request:", str(e))
             return None
 
     def get_user_profile(self, access_token):
@@ -154,7 +174,7 @@ class SpotifyAPI:
             return response.json()
         else:
             return None
-
+        
     def get_audio_features(self, access_token, track_ids):
         """
         Retrieve audio features for a list of track IDs.
@@ -174,9 +194,7 @@ class SpotifyAPI:
 
         # Spotify allows up to 100 track IDs per request
         for i in range(0, len(track_ids), 100):
-
-            batch = track_ids[i:i + 100]
-
+            batch = track_ids[i:i+100]
             ids_param = ",".join(batch)
 
             response = requests.get(
@@ -221,30 +239,3 @@ class SpotifyAPI:
             return "Focused"
         else:
             return "Mixed"
-
-    def get_artists_genres(self, access_token, artist_ids):
-        """
-        Get genres for a list of artist IDs.
-
-        Returns:
-            dict: {artist_id: [genres]}
-        """
-        headers = {'Authorization': f'Bearer {access_token}'}
-        genres_map = {}
-
-        for i in range(0, len(artist_ids), 50):
-            batch = artist_ids[i:i + 50]
-            response = requests.get(
-                f"{self.api_base_url}artists",
-                headers=headers,
-                params={"ids": ",".join(batch)}
-            )
-            if response.status_code == 200:
-                artists = response.json().get("artists", [])
-                for artist in artists:
-                    genres_map[artist['id']] = artist.get('genres', [])
-            else:
-                print("Failed to fetch artist genres:", response.text)
-
-        return genres_map
-
