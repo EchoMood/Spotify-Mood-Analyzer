@@ -571,11 +571,12 @@ def create_app(config_name='development'):
     # ----------------------------------------------------------
     # Logout Route
     # ----------------------------------------------------------
-    @app.route('/logout')
+    @app.route('/logout', methods=['POST'])
     def logout():
         session.clear()
         flash('You have been logged out.', 'info')
         return redirect(url_for('index'))
+
 
     # ----------------------------------------------------------
     # Admin View Users Route (kept from original app.py)

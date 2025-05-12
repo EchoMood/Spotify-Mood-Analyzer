@@ -46,7 +46,7 @@
             </section>
 
             <!-- Introductory text: elaborates on the app's core value proposition. -->
-            <p class="intro-text">Turn your Spotify vibes into a colorful mood journey.</p>
+            <p class="intro-text">Turn your Spotify vibes into a colourful mood journey.</p>
             <p class="intro-text">EchoMood brings your emotions to life with vibrant visuals and personal insights!</p>
         </header>
 
@@ -59,7 +59,7 @@
             Use Flask's url_for for static asset linking:
             avoids brittle relative paths and ensures caching.
           -->
-                    <img src="{{ url_for('static', filename='images/spotify-logo.svg') }}" alt="Spotify logo"
+                    <img src="{{ url_for('static', filename='images/spotify-logo.png') }}" alt="Spotify logo"
                         class="spotify-logo" />
                 </div>
             </div>
@@ -81,11 +81,11 @@
                     </p>
                 </div>
                 <!--
-          Button to trigger JS redirect. Using type="button" prevents default form behavior.
-          Class "get-started-btn" is used in index.js to attach click handler.
-        -->
+                Button to trigger JS redirect. Using type="button" prevents default form behavior.
+                Class "get-started-btn" is used in index.js to attach click handler.
+                -->
                 <button type="button" class="get-started-btn">Get Started</button>
-            </div>
+                </div>
         </section>
 
         <!-- Mood controls demo: interactive sliders showcase dynamic UI capabilities. -->

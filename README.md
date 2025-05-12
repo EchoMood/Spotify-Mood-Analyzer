@@ -8,7 +8,6 @@
 
 ## 🎵 Project Overview
 
-
 EchoMood is a web application for analyzing your Spotify listening history and visualizing user moods and personality traits based on music preferences.  
 Upload your Spotify data and generate beautiful, insightful visualizations of your musical personality!
 
