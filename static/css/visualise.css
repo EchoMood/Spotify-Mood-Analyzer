@@ -346,3 +346,24 @@ body {
   background-color: #1DB954;
   color: #000000;
 }
+
+/* Navigation styles */
+.navigation {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.navigation a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.navigation a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}

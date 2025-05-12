@@ -9,11 +9,11 @@ import os
 
 try:
     from .config import config
-    from . import create_app
+    from app import create_app
 except ImportError:
     # Allow running as a standalone script during development
     from config import config
-    from __init__ import create_app
+    # from __init__ import create_app
 
 
 # Create the app globally so it can be imported

@@ -25,6 +25,10 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
 
+    friends = db.relationship('Friend',
+                              primaryjoin="and_(User.id==Friend.user_id, Friend.status=='accepted')",
+                              backref='user_friend', lazy='dynamic')
+
     # Authentication methods
     @property
     def is_oauth_user(self):
@@ -62,6 +66,25 @@ class Track(db.Model):
         db.PrimaryKeyConstraint('id', 'user_id', 'time_range'),
     )
 
+
+class Friend(db.Model):
+    __tablename__ = 'friend'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(50), db.ForeignKey('user.id'), nullable=False)
+    friend_id = db.Column(db.String(50), db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # 'pending', 'accepted', 'rejected'
+    share_data = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('friend_requests_sent', lazy='dynamic'))
+    friend = db.relationship('User', foreign_keys=[friend_id],
+                             backref=db.backref('friend_requests_received', lazy='dynamic'))
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'friend_id', name='unique_friendship'),
+    )
 
 class AudioFeatures(db.Model):
     id = db.Column(db.String(50), primary_key=True)

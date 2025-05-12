@@ -11,7 +11,7 @@ from wtforms import EmailField, PasswordField, SubmitField, StringField, Integer
 from wtforms.validators import DataRequired, Email, Optional, EqualTo, NumberRange
 from flask_wtf.csrf import CSRFProtect
 
-from models import db, User, Track, AudioFeatures
+from models import db, User, Track, AudioFeatures, Friend
 from utils.spotify import SpotifyAPI
 from config import config
 
@@ -340,6 +340,280 @@ def create_app(config_name='development'):
                                 mood_data=mood_data,
                                 personality=personality_data)
 
+    # ----------------------------------------------------------
+    # Friends Routes
+    # ----------------------------------------------------------
+    @app.route('/friends')
+    def friends():
+        """View friends list and manage friend requests"""
+        if 'user_id' not in session:
+            flash('Please log in to view your friends.', 'warning')
+            return redirect(url_for('login'))
+
+        user_id = session['user_id']
+
+        # Get accepted friends
+        friends_sent = Friend.query.filter_by(user_id=user_id, status='accepted').all()
+        friends_received = Friend.query.filter_by(friend_id=user_id, status='accepted').all()
+
+        # Get pending requests
+        pending_requests = Friend.query.filter_by(friend_id=user_id, status='pending').all()
+
+        # Combine friends from both directions
+        friends_list = []
+        for f in friends_sent:
+            friend_user = User.query.get(f.friend_id)
+            if friend_user:
+                friends_list.append({
+                    'id': friend_user.id,
+                    'name': friend_user.display_name or f"{friend_user.first_name} {friend_user.last_name}".strip(),
+                    'share_data': f.share_data
+                })
+
+        for f in friends_received:
+            friend_user = User.query.get(f.user_id)
+            if friend_user:
+                friends_list.append({
+                    'id': friend_user.id,
+                    'name': friend_user.display_name or f"{friend_user.first_name} {friend_user.last_name}".strip(),
+                    'share_data': f.share_data
+                })
+
+        # Process pending requests
+        pending_list = []
+        for req in pending_requests:
+            requester = User.query.get(req.user_id)
+            if requester:
+                pending_list.append({
+                    'id': req.id,
+                    'user_id': requester.id,
+                    'name': requester.display_name or f"{requester.first_name} {requester.last_name}".strip()
+                })
+
+        return render_template('friends.html',
+                               friends=friends_list,
+                               pending_requests=pending_list)
+
+    @app.route('/friends/search', methods=['GET', 'POST'])
+    def search_friends():
+        """Search for users to add as friends"""
+        if 'user_id' not in session:
+            flash('Please log in to search for friends.', 'warning')
+            return redirect(url_for('login'))
+
+        user_id = session['user_id']
+        query = request.args.get('query', '')
+
+        if not query:
+            return render_template('friend_search.html', results=[], query='')
+
+        # Search for users by name or email
+        results = User.query.filter(
+            User.id != user_id,
+            db.or_(
+                User.display_name.ilike(f'%{query}%'),
+                User.first_name.ilike(f'%{query}%'),
+                User.last_name.ilike(f'%{query}%'),
+                User.email.ilike(f'%{query}%')
+            )
+        ).all()
+
+        # Check existing friendship status
+        processed_results = []
+        for user in results:
+            # Check if already friends or request pending
+            friendship_sent = Friend.query.filter_by(user_id=user_id, friend_id=user.id).first()
+            friendship_received = Friend.query.filter_by(user_id=user.id, friend_id=user_id).first()
+
+            status = 'none'
+            if friendship_sent:
+                status = friendship_sent.status
+            elif friendship_received:
+                status = friendship_received.status
+
+            processed_results.append({
+                'id': user.id,
+                'name': user.display_name or f"{user.first_name} {user.last_name}".strip(),
+                'email': user.email,
+                'status': status
+            })
+
+        return render_template('friend_search.html', results=processed_results, query=query)
+
+    @app.route('/friends/add', methods=['POST'])
+    def add_friend():
+        """Send a friend request"""
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        user_id = session['user_id']
+        friend_id = request.form.get('friend_id')
+
+        if not friend_id:
+            flash('Invalid friend request.', 'danger')
+            return redirect(url_for('friends'))
+
+        if user_id == friend_id:
+            flash('You cannot add yourself as a friend.', 'warning')
+            return redirect(url_for('friends'))
+
+        # Check if friend request already exists
+        existing = Friend.query.filter_by(user_id=user_id, friend_id=friend_id).first()
+        if existing:
+            flash('Friend request already sent.', 'info')
+            return redirect(url_for('friends'))
+
+        # Check if they sent you a request first
+        existing = Friend.query.filter_by(user_id=friend_id, friend_id=user_id).first()
+        if existing:
+            if existing.status == 'pending':
+                # Auto-accept if they sent you a request
+                existing.status = 'accepted'
+                db.session.commit()
+                flash('Friend request accepted!', 'success')
+                return redirect(url_for('friends'))
+
+        # Create new friend request
+        new_request = Friend(user_id=user_id, friend_id=friend_id, status='pending')
+        db.session.add(new_request)
+        db.session.commit()
+
+        flash('Friend request sent!', 'success')
+        return redirect(url_for('friends'))
+
+    @app.route('/friends/accept', methods=['POST'])
+    def accept_friend():
+        """Accept a friend request"""
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        user_id = session['user_id']
+        request_id = request.form.get('request_id')
+
+        friend_request = Friend.query.filter_by(id=request_id, friend_id=user_id, status='pending').first()
+
+        if not friend_request:
+            flash('Friend request not found.', 'danger')
+            return redirect(url_for('friends'))
+
+        friend_request.status = 'accepted'
+        db.session.commit()
+
+        flash('Friend request accepted!', 'success')
+        return redirect(url_for('friends'))
+
+    @app.route('/friends/reject', methods=['POST'])
+    def reject_friend():
+        """Reject a friend request"""
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        user_id = session['user_id']
+        request_id = request.form.get('request_id')
+
+        friend_request = Friend.query.filter_by(id=request_id, friend_id=user_id, status='pending').first()
+
+        if not friend_request:
+            flash('Friend request not found.', 'danger')
+            return redirect(url_for('friends'))
+
+        friend_request.status = 'rejected'
+        db.session.commit()
+
+        flash('Friend request rejected.', 'info')
+        return redirect(url_for('friends'))
+
+    @app.route('/friends/toggle-share', methods=['POST'])
+    def toggle_share():
+        """Toggle data sharing with a friend"""
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        user_id = session['user_id']
+        friend_id = request.form.get('friend_id')
+
+        # Check both directions of friendship
+        friendship = Friend.query.filter_by(user_id=user_id, friend_id=friend_id, status='accepted').first()
+        if not friendship:
+            friendship = Friend.query.filter_by(user_id=friend_id, friend_id=user_id, status='accepted').first()
+
+        if not friendship:
+            return jsonify({'error': 'Friendship not found'}), 404
+
+        # Toggle share status
+        friendship.share_data = not friendship.share_data
+        db.session.commit()
+
+        return jsonify({'success': True, 'sharing': friendship.share_data})
+
+    @app.route('/friends/<friend_id>/visualise')
+    def friend_visualise(friend_id):
+        """View a friend's visualisation data"""
+        if 'user_id' not in session:
+            flash('Please log in first.', 'warning')
+            return redirect(url_for('login'))
+
+        user_id = session['user_id']
+
+        # Check if friends with sharing enabled
+        friendship1 = Friend.query.filter_by(user_id=user_id, friend_id=friend_id, status='accepted',
+                                             share_data=True).first()
+        friendship2 = Friend.query.filter_by(user_id=friend_id, friend_id=user_id, status='accepted',
+                                             share_data=True).first()
+
+        if not friendship1 and not friendship2:
+            flash('You do not have permission to view this data.', 'warning')
+            return redirect(url_for('friends'))
+
+        friend = User.query.get(friend_id)
+        if not friend:
+            flash('Friend not found.', 'danger')
+            return redirect(url_for('friends'))
+
+        # Get time range from query parameters (default to medium_term)
+        time_range = request.args.get('time_range', 'medium_term')
+
+        # Get friend's mood data - similar logic as in the visualise route
+        # Fetch all mood labels for this friend from the AudioFeatures table
+        all_features = AudioFeatures.query.join(Track, AudioFeatures.track_id == Track.id).filter(
+            Track.user_id == friend_id
+        ).all()
+
+        # Count how many times each mood appears
+        from collections import Counter
+        mood_counts = Counter(f.mood for f in all_features)
+        total = sum(mood_counts.values()) or 1  # avoid division by zero
+
+        # Build mood_data with percentage breakdown
+        mood_data = {}
+        for mood, count in mood_counts.items():
+            # Skip if mood is None
+            if not mood:
+                continue
+
+            mood_data[mood.lower()] = {
+                "percentage": round(100 * count / total),  # Convert to percentage
+                "top_track": None,  # You can populate this if you have the data
+                "recommended_tracks": []  # You can populate this if you have the data
+            }
+
+        # Generate or fetch personality data
+        personality_data = {
+            "mbti": "INTJ",  # This should be fetched from the database if available
+            "summary": "Strategic, independent, and insightful.",
+            "related_songs": []  # You can populate this if you have the data
+        }
+
+        # Pass friend's name to the template
+        friend_name = friend.display_name or f"{friend.first_name} {friend.last_name}".strip()
+
+        return render_template('visualise.html',
+                               first_name=friend_name,
+                               time_range=time_range,
+                               mood_data=mood_data,
+                               personality=personality_data,
+                               is_friend_view=True,
+                               friend_id=friend_id)
 
     # ----------------------------------------------------------
     # API Endpoint for Mood Data (AJAX)
