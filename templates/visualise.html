@@ -320,8 +320,8 @@
 
             <!-- Left: MBTI and AI-generated image -->
             <div class="left">
-                <h3>INTJ</h3>
-                <img src="/static/images/virtual-pet.png" alt="AI-generated personality character">
+                <h2>Your Mood Summary</h2>
+                <p>{{ mood_summary }}</p>
             </div>
 
             <!-- Right: Summary and related songs -->
@@ -358,6 +358,11 @@
                 </ul>
 
                 <button class="share-button">Share This Card</button>
+                <!-- Logout button wrapped inside a POST form -->
+                <form action="{{ url_for('logout') }}" method="post" style="display: inline;">
+                    {{ logout_form.hidden_tag() }}
+                    <button class="share-button" type="submit">Logout</button>
+                </form>
 
             </div>
             <div class="clear"></div>

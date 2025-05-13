@@ -15,6 +15,7 @@ from flask_wtf.csrf import CSRFProtect
 from models import db, User, Track, AudioFeatures
 from utils.spotify import SpotifyAPI
 from config import config
+from utils.chatgpt import ChatGPT
 
 # ----------------------------------------------------------
 # Form Classes
@@ -45,6 +46,8 @@ class SignupStepTwoForm(FlaskForm):
     ])
     submit = SubmitField('Sign Up')
 
+class LogoutForm(FlaskForm):
+    submit = SubmitField('Logout')
 
 # ----------------------------------------------------------
 # Flask App Configuration and Initialization
@@ -139,7 +142,8 @@ def create_app(config_name='development'):
             flash('Account created successfully!', 'success')
             return redirect(url_for('login'))
         
-        if 'spotify_user_id' in session:
+        if 'spotify_user_id' in session and request.method == 'POST':
+            # If the user is coming from Spotify login and has already provided their email
             # Spotify signup continuation
             user_id = session['spotify_user_id']
             display_name = session.get('display_name', '')
@@ -278,16 +282,68 @@ def create_app(config_name='development'):
         else:
             # Check if email is returned by Spotify
             if not user_data.get('email'):
-                # Store Spotify data in session and redirect to signup credential page
-                session['spotify_id'] = user_data['id']
-                session['display_name'] = user_data.get('display_name', '')
-                session['access_token'] = access_token
-                session['refresh_token'] = refresh_token
-                session['token_expiry'] = token_expiry.isoformat()  # Store as string for JSON compatibility
-                session['spotify_login_pending'] = True  # flag to signal pending signup
+                
+                # Check if user already exists using Spotify user ID
+                existing_user = User.query.filter_by(id=user_data['id']).first()
+                if existing_user:
+                    # Log the user in instead of asking to complete signup
+                    existing_user.access_token = access_token
+                    existing_user.refresh_token = refresh_token
+                    existing_user.token_expiry = token_expiry
+                    existing_user.last_login = datetime.utcnow()
+                    db.session.commit()
 
-                flash('We couldn’t retrieve your email from Spotify. Please complete your signup.', 'warning')
-                return redirect(url_for('signup_login_credentials'))
+                    # Store user info in session
+                    session['user_id'] = existing_user.id
+                    session['user_email'] = existing_user.email or ''
+                    session['first_name'] = existing_user.first_name or existing_user.display_name.split()[0]
+
+                    # Fetch mood data again
+                    mood_counts = fetch_and_store_user_data(existing_user.id, spotify_api)
+                    session['mood_counts'] = mood_counts
+                    
+                    # NEW: Generate ChatGPT mood summary based on updated DB
+
+                    # Fetch tracks and audio features from DB
+                    tracks = Track.query.filter_by(user_id=user.id).all()
+                    feature_map = {
+                        f.track_id: f
+                        for f in AudioFeatures.query.filter(AudioFeatures.track_id.in_([t.id for t in tracks])).all()
+                    }
+
+                    # Prepare track data for GPT
+                    gpt_input = []
+                    for track in tracks:
+                        features = feature_map.get(track.id)
+                        if features:
+                            gpt_input.append({
+                                "name": track.name,
+                                "artist": track.artist,
+                                "valence": features.valence,
+                                "energy": features.energy,
+                                "danceability": features.danceability,
+                                "tempo": features.tempo,
+                                "mood": features.mood
+                            })
+
+                    # Call GPT and store response
+                    chatgpt = ChatGPT(app)
+                    mood_summary = chatgpt.analyze_user_tracks(gpt_input)
+                    session['mood_summary'] = mood_summary
+
+                    return redirect(url_for('visualise'))
+                
+                else:
+                    # If no existing user found, store partial data in session
+                    session['spotify_user_id'] = user_data['id']
+                    session['display_name'] = user_data.get('display_name', '')
+                    session['first_name'] = user_data.get('display_name', '').split()[0] if user_data.get('display_name') else 'User'
+                    session['access_token'] = access_token
+                    session['refresh_token'] = refresh_token
+                    session['token_expiry'] = token_expiry.isoformat()
+                    session['spotify_login_pending'] = True  # flag to signal pending signup
+                    flash('We couldn’t retrieve your email from Spotify. Please complete your signup.', 'warning')
+                    return redirect(url_for('signup_login_credentials'))
 
             # If email exists, proceed with user creation
             user = User(
@@ -314,6 +370,33 @@ def create_app(config_name='development'):
 
         mood_counts = fetch_and_store_user_data(user.id, spotify_api)
         session['mood_counts'] = mood_counts
+
+        # Fetch tracks and audio features from DB
+        tracks = Track.query.filter_by(user_id=user.id).all()
+        feature_map = {
+            f.track_id: f
+            for f in AudioFeatures.query.filter(AudioFeatures.track_id.in_([t.id for t in tracks])).all()
+        }
+
+        # Prepare track data for GPT
+        gpt_input = []
+        for track in tracks:
+            features = feature_map.get(track.id)
+            if features:
+                gpt_input.append({
+                    "name": track.name,
+                    "artist": track.artist,
+                    "valence": features.valence,
+                    "energy": features.energy,
+                    "danceability": features.danceability,
+                    "tempo": features.tempo,
+                    "mood": features.mood
+                })
+
+        # Call GPT and store response
+        chatgpt = ChatGPT(app)
+        mood_summary = chatgpt.analyze_user_tracks(gpt_input)
+        session['mood_summary'] = mood_summary
 
         # Redirect to visualization
         return redirect(url_for('visualise'))
@@ -379,12 +462,18 @@ def create_app(config_name='development'):
                 # ... (rest of the personality data remains the same)
             ]
         }
-
+        logout_form = LogoutForm()
+        # Fetch mood summary from session (generated by ChatGPT after login)
+        mood_summary = session.get('mood_summary', 'We couldn’t generate your mood summary at this time.')
+        
+        # Render the visualization page with mood data and personality data
         return render_template('visualise.html',
                                 first_name=session.get('first_name', 'User'),
                                 time_range=time_range,
                                 mood_data=mood_data,
-                                personality=personality_data)
+                                personality=personality_data,
+                                logout_form=logout_form,
+                                mood_summary=mood_summary)
 
 
     # ----------------------------------------------------------
@@ -624,6 +713,40 @@ def create_app(config_name='development'):
         return redirect(url_for('index'))
 
 
+    # ----------------------------------------------------------
+    # Admin View for User's Tracks and Moods
+    # ----------------------------------------------------------
+    @app.route('/admin/tracks/<user_id>')
+    def admin_view_tracks(user_id):
+        # Query the user by ID from the database
+        user = User.query.get(user_id)
+        if not user:
+            return f"No user found with ID {user_id}", 404
+
+        # Retrieve all tracks for this user ordered by time_range and rank
+        tracks = Track.query.filter_by(user_id=user.id).order_by(Track.time_range, Track.rank).all()
+        
+        # Prepare combined track + mood feature data for each track
+        track_data = []
+        for t in tracks:
+            features = AudioFeatures.query.filter_by(track_id=t.id).first()
+
+            track_data.append({
+                'name': t.name,
+                'artist': t.artist,
+                'album': t.album,
+                'popularity': t.popularity,
+                'time_range': t.time_range,
+                'mood': features.mood if features else 'N/A',
+                'valence': features.valence if features else 'N/A',
+                'energy': features.energy if features else 'N/A',
+                'album_image_url': t.album_image_url
+            })
+
+        # Render the HTML template with full track + mood data for this user
+        return render_template("admin_tracks.html", tracks=track_data, user=user)
+
+    
     # ----------------------------------------------------------
     # Admin View Users Route (kept from original app.py)
     # ----------------------------------------------------------

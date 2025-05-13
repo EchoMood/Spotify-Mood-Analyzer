@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin – User Database</title>
+
+    <!-- Set dark theme and base styles -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,6 +14,7 @@
             padding: 2rem;
         }
 
+        /* Table layout styling */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -29,18 +32,33 @@
             background-color: #333;
         }
 
+        /* Header spacing */
         h2 {
             margin-bottom: 1rem;
+        }
+
+        /* Link appearance */
+        a {
+            color: #4dd0e1;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 
 <body>
+    <!-- Page heading for admin user view -->
     <h2>👤 Registered Users</h2>
+
+    <!-- Begin table to display all users in database -->
     <table>
         <thead>
             <tr>
-                <th>ID</th>
+                <!-- User ID column links to detailed track view -->
+                <th>ID (Click to view tracks)</th>
                 <th>First Name</th>
                 <th>Last Name</th>
                 <th>Age</th>
@@ -50,7 +68,12 @@
         <tbody>
             {% for user in users %}
             <tr>
-                <td>{{ user.id }}</td>
+                <!-- Link redirects to /admin/tracks/<user_id> to inspect user’s tracks -->
+                <td>
+                    <a href="{{ url_for('admin_view_tracks', user_id=user.id) }}">
+                        {{ user.id }}
+                    </a>
+                </td>
                 <td>{{ user.first_name }}</td>
                 <td>{{ user.last_name }}</td>
                 <td>{{ user.age }}</td>
