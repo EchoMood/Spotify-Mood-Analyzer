@@ -14,8 +14,22 @@
 
     <!-- Background Section: Dark cosmic theme -->
     <section class="background">
+
+        <nav class="navigation">
+            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('friends') }}">Friends</a>
+            {% if is_friend_view %}
+                <a href="{{ url_for('visualise') }}">My Profile</a>
+            {% endif %}
+        </nav>
         
         <h1 class="page-title">Hi {{ first_name }}</h1>
+         {% if is_friend_view %}
+            {{ first_name }}'s Spotify Mood Analysis
+        {% else %}
+        Your Spotify Mood Analysis
+        {% endif %}
+
         <h2 class="greeting">Your Spotify Mood Analysis</h2>
         <br>
         <p class="subheading">An overview of your mood patterns and music-driven personality</p>

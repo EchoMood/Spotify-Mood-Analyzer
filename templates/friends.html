@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friends - Spotify Mood Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/visualise.css') }}">
+    <style>
+        .friends-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .friend-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .friend-info {
+            flex: 1;
+        }
+
+        .friend-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .friend-actions button {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .button-primary {
+            background-color: #7b2ff7;
+            color: white;
+        }
+
+        .button-secondary {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .pending-requests {
+            margin-top: 40px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .search-box button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background-color: #7b2ff7;
+            color: white;
+            cursor: pointer;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #7b2ff7;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .share-label {
+            margin-right: 10px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Section: Dark cosmic theme -->
+    <section class="background">
+        <h1 class="page-title">Friends</h1>
+        <p class="subheading">Connect with friends and share your music mood analysis</p>
+    </section>
+
+    <div class="friends-container">
+        <!-- Search for friends -->
+        <form action="{{ url_for('search_friends') }}" method="GET" class="search-box">
+            <input type="text" name="query" placeholder="Search for friends by name or email">
+            <button type="submit">Search</button>
+        </form>
+
+        <!-- My Friends -->
+        <h2 class="section-title">My Friends</h2>
+
+        {% if friends %}
+            {% for friend in friends %}
+                <div class="friend-card">
+                    <div class="friend-info">
+                        <h3>{{ friend.name }}</h3>
+                    </div>
+                    <div class="friend-actions">
+                        <span class="share-label">Share data:</span>
+                        <label class="switch">
+                            <input type="checkbox" class="share-toggle" data-friend-id="{{ friend.id }}"
+                                   {% if friend.share_data %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                        <a href="{{ url_for('friend_visualise', friend_id=friend.id) }}" class="button-primary">View Profile</a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>You don't have any friends yet. Use the search box to find friends!</p>
+        {% endif %}
+
+        <!-- Pending Friend Requests -->
+        {% if pending_requests %}
+            <div class="pending-requests">
+                <h2 class="section-title">Friend Requests</h2>
+
+                {% for request in pending_requests %}
+                    <div class="friend-card">
+                        <div class="friend-info">
+                            <h3>{{ request.name }}</h3>
+                            <p>Wants to be your friend</p>
+                        </div>
+                        <div class="friend-actions">
+                            <form action="{{ url_for('accept_friend') }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="request_id" value="{{ request.id }}">
+                                <button type="submit" class="button-primary">Accept</button>
+                            </form>
+                            <form action="{{ url_for('reject_friend') }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="request_id" value="{{ request.id }}">
+                                <button type="submit" class="button-secondary">Reject</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // JavaScript for toggling share data
+        document.querySelectorAll('.share-toggle').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const friendId = this.dataset.friendId;
+
+                fetch('/friends/toggle-share', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `friend_id=${friendId}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Optional: show a message
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Revert the toggle if there was an error
+                    this.checked = !this.checked;
+                });
+            });
+        });
+    </script>
+</body>
+</html>

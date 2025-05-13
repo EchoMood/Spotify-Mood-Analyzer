@@ -12,7 +12,7 @@ from wtforms import EmailField, PasswordField, SubmitField, StringField, Integer
 from wtforms.validators import DataRequired, Email, Optional, EqualTo, NumberRange
 from flask_wtf.csrf import CSRFProtect
 
-from models import db, User, Track, AudioFeatures
+from models import db, User, Track, AudioFeatures, Friend
 from utils.spotify import SpotifyAPI
 from config import config
 
@@ -62,6 +62,8 @@ def create_app(config_name='development'):
     app.secret_key = app.config.get('SECRET_KEY')
     print("app.secret_key", app.secret_key)
 
+    from flask_migrate import Migrate
+    migrate = Migrate(app, db)
 
     # Enable CSRF protection
     csrf = CSRFProtect(app)
@@ -136,9 +138,16 @@ def create_app(config_name='development'):
 
             # Clear session data and redirect
             session.clear()
-            flash('Account created successfully!', 'success')
-            return redirect(url_for('login'))
+            # Store user info in session for login
+            session['user_id'] = new_user.id
+            session['user_email'] = new_user.email
+            session['first_name'] = new_user.first_name
+
+            flash('Account created successfully! Connect your Spotify account to unlock all features.', 'success')
+            # new dashboard with connect via spotify option
+            return redirect(url_for('dashboard'))
         
+        # Handle Spotify signup continuation
         if 'spotify_user_id' in session:
             # Spotify signup continuation
             user_id = session['spotify_user_id']
@@ -167,6 +176,59 @@ def create_app(config_name='development'):
 
         return render_template('signup_cred.html', form=form)
 
+    # new dashboard with connect via spotify option
+    @app.route('/dashboard')
+    def dashboard():
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+
+        user = User.query.get(session['user_id'])
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
+
+        # Get friends
+        friends_sent = Friend.query.filter_by(user_id=user.id, status='accepted').all()
+        friends_received = Friend.query.filter_by(friend_id=user.id, status='accepted').all()
+
+        # Get pending requests
+        pending_requests = Friend.query.filter_by(friend_id=user.id, status='pending').all()
+
+        # Process friends list
+        friends_list = []
+        for f in friends_sent:
+            friend_user = User.query.get(f.friend_id)
+            if friend_user:
+                friends_list.append({
+                    'id': friend_user.id,
+                    'name': friend_user.display_name or f"{friend_user.first_name} {friend_user.last_name}".strip(),
+                    'share_data': f.share_data
+                })
+
+        for f in friends_received:
+            friend_user = User.query.get(f.user_id)
+            if friend_user:
+                friends_list.append({
+                    'id': friend_user.id,
+                    'name': friend_user.display_name or f"{friend_user.first_name} {friend_user.last_name}".strip(),
+                    'share_data': f.share_data
+                })
+
+        # Process pending requests
+        pending_list = []
+        for req in pending_requests:
+            requester = User.query.get(req.user_id)
+            if requester:
+                pending_list.append({
+                    'id': req.id,
+                    'user_id': requester.id,
+                    'name': requester.display_name or f"{requester.first_name} {requester.last_name}".strip()
+                })
+
+        return render_template('dashboard.html',
+                               user=user,
+                               friends=friends_list,
+                               pending_requests=pending_list)
     # ----------------------------------------------------------
     # Traditional Login Route
     # ----------------------------------------------------------
@@ -190,8 +252,8 @@ def create_app(config_name='development'):
                 session['user_email'] = user.email
                 session['first_name'] = user.first_name
 
-                # Redirect to visualization
-                return redirect(url_for('visualise'))
+                # Redirect to dashboard
+                return redirect(url_for('dashboard'))
             else:
                 flash('Invalid email or password. Please try again.', 'danger')
 
@@ -211,6 +273,7 @@ def create_app(config_name='development'):
 
         # Get authorization URL from Spotify API utility
         auth_url = spotify_api.get_auth_url(state, scope)
+        print("AUTH URL", auth_url)
 
         return redirect(auth_url)
 
@@ -231,6 +294,7 @@ def create_app(config_name='development'):
             flash('Authentication was denied.', 'warning')
             return redirect(url_for('index'))
         print("No error in callback.")
+        
         # Check if the code is present in the callback
         print("Code from request:", request.args.get('code'))
         # Get the authorization code
@@ -243,6 +307,7 @@ def create_app(config_name='development'):
         # Exchange code for access token
         token_data = spotify_api.get_access_token(code)
         print("Token data:", token_data)
+        
         # Check if token data is valid
         if not token_data:
             flash('Failed to authenticate with Spotify.', 'danger')
@@ -255,26 +320,50 @@ def create_app(config_name='development'):
         token_expiry = datetime.utcnow() + timedelta(seconds=expires_in)
         session['access_token'] = access_token
 
-        # Get user profile
+        # Get user profile using Spotify API
         user_data = spotify_api.get_user_profile(access_token)
         print("User data:", user_data)
+
+        # Check if we're linking an existing account
+        linking = session.pop('linking', False)
+        if linking and 'user_id' in session:
+            # User is already logged in, just link the Spotify account
+            existing_user = User.query.get(session['user_id'])
+
+            if existing_user:
+                existing_user.access_token = access_token
+                existing_user.refresh_token = refresh_token
+                existing_user.token_expiry = token_expiry
+                existing_user.spotify_id = user_data['id']
+                db.session.commit()
+
+                flash('Spotify account linked successfully!', 'success')
+                return redirect(url_for('dashboard'))
+
         # Check if user data is valid
         if not user_data:
             flash('Failed to retrieve user information.', 'danger')
             return redirect(url_for('index'))
 
-        # Save or update user in database
+        # First check if a user with this Spotify ID exists
         user = User.query.filter_by(id=user_data['id']).first()
 
+        # If not, check if a user with this email exists
+        if not user and 'email' in user_data and user_data['email']:
+            user = User.query.filter_by(email=user_data['email']).first()
+
         if user:
-            # Update existing user
+            # Update existing user with Spotify data
             user.access_token = access_token
             user.refresh_token = refresh_token
             user.token_expiry = token_expiry
+
+            # If this was an email-only user before, add the Spotify ID
+            if not user.id.startswith('spotify:'):
+                # We can't change the primary key, so we'll link via other fields
+                user.spotify_id = user_data['id']
+
             user.last_login = datetime.utcnow()
-            # If existing user logged in through Spotify but didn't have an email yet
-            if not user.email and 'email' in user_data:
-                user.email = user_data.get('email')
         else:
             # Check if email is returned by Spotify
             if not user_data.get('email'):
@@ -286,18 +375,25 @@ def create_app(config_name='development'):
                 session['token_expiry'] = token_expiry.isoformat()  # Store as string for JSON compatibility
                 session['spotify_login_pending'] = True  # flag to signal pending signup
 
-                flash('We couldn’t retrieve your email from Spotify. Please complete your signup.', 'warning')
+                flash("We couldn't retrieve your email from Spotify. Please complete your signup.", 'warning')
                 return redirect(url_for('signup_login_credentials'))
 
-            # If email exists, proceed with user creation
+            # Create new user from Spotify data
+            display_name = user_data.get('display_name', '')
+            first_name = display_name.split()[0] if display_name else ''
+            last_name = ' '.join(display_name.split()[1:]) if len(display_name.split()) > 1 else ''
+
             user = User(
                 id=user_data['id'],
-                email=user_data.get('email'),
-                display_name=user_data.get('display_name', ''),
-                first_name=user_data.get('display_name', '').split()[0] if user_data.get('display_name') else '',
+                spotify_id=user_data['id'],
+                email=user_data.get('email', ''),
+                display_name=display_name,
+                first_name=first_name,
+                last_name=last_name,
                 access_token=access_token,
                 refresh_token=refresh_token,
                 token_expiry=token_expiry,
+                registration_method='spotify',
                 last_login=datetime.utcnow()
             )
             db.session.add(user)
@@ -307,16 +403,53 @@ def create_app(config_name='development'):
         # Store user info in session
         session['user_id'] = user.id
         session['user_email'] = user.email
-        if user.first_name:
-            session['first_name'] = user.first_name
-        else:
-            session['first_name'] = user.display_name.split()[0] if user.display_name else 'User'
+        session['first_name'] = user.first_name or user.display_name.split()[0] if user.display_name else 'User'
 
-        mood_counts = fetch_and_store_user_data(user.id, spotify_api)
-        session['mood_counts'] = mood_counts
+        # If user doesn't have a password (Spotify-only registration), redirect to set one
+        if user.registration_method == 'spotify' and not user.password:
+            flash('Please complete your account setup by setting a password.', 'info')
+            return redirect(url_for('complete_account'))
 
-        # Redirect to visualization
+        # Otherwise proceed to visualization
         return redirect(url_for('visualise'))
+
+    # users need to complete account if they haven't connected spotify but have made an account
+    @app.route('/complete_account', methods=['GET', 'POST'])
+    def complete_account():
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+
+        user = User.query.get(session['user_id'])
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
+
+        # If user already has a password, redirect
+        if user.password:
+            return redirect(url_for('visualise'))
+
+        # Create a form for password
+        class CompleteAccountForm(FlaskForm):
+            password = PasswordField('Password', validators=[
+                DataRequired(),
+                # Add password strength requirements if needed
+            ])
+            confirm_password = PasswordField('Confirm Password', validators=[
+                DataRequired(),
+                EqualTo('password', message='Passwords must match')
+            ])
+            submit = SubmitField('Complete Account')
+
+        form = CompleteAccountForm()
+
+        if form.validate_on_submit():
+            user.set_password(form.password.data)
+            db.session.commit()
+            flash('Account setup completed! You can now log in using either Spotify or your email and password.',
+                  'success')
+            return redirect(url_for('visualise'))
+
+        return render_template('complete_account.html', form=form, user=user)
 
     # ----------------------------------------------------------
     # Visualization Route
@@ -364,8 +497,6 @@ def create_app(config_name='development'):
                 "recommended_tracks": []  # TODO: You can add recommendations here
             }
 
-
-
         # Generate or fetch personality data
         personality_data = {
             "mbti": "INTJ",
@@ -384,8 +515,321 @@ def create_app(config_name='development'):
                                 first_name=session.get('first_name', 'User'),
                                 time_range=time_range,
                                 mood_data=mood_data,
-                                personality=personality_data)
+                               personality=personality_data)
 
+    # route to link spotify account
+    @app.route('/link/spotify')
+    def link_spotify():
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+
+        # Generate state for CSRF protection
+        state = str(uuid.uuid4())
+        session['state'] = state
+        session['linking'] = True  # Flag to indicate we're linking accounts
+
+        # Define scopes needed for the application
+        scope = 'user-top-read user-read-private user-read-recently-played'
+
+        # Get authorization URL from Spotify API utility
+        auth_url = spotify_api.get_auth_url(state, scope)
+
+        return redirect(auth_url)
+
+    # route to unlink spotify account
+    @app.route('/unlink/spotify', methods=['POST'])
+    def unlink_spotify():
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+
+        user = User.query.get(session['user_id'])
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
+
+        # Reset Spotify-related fields
+        user.access_token = None
+        user.refresh_token = None
+        user.token_expiry = None
+        db.session.commit()
+
+        flash('Spotify account unlinked successfully.', 'success')
+        return redirect(url_for('dashboard'))
+
+    # ----------------------------------------------------------
+    # Friends Routes
+    # ----------------------------------------------------------
+    @app.route('/friends')
+    def friends():
+        """View friends list and manage friend requests"""
+        if 'user_id' not in session:
+            flash('Please log in to view your friends.', 'warning')
+            return redirect(url_for('login'))
+
+        user_id = session['user_id']
+
+        # Get accepted friends
+        friends_sent = Friend.query.filter_by(user_id=user_id, status='accepted').all()
+        friends_received = Friend.query.filter_by(friend_id=user_id, status='accepted').all()
+
+        # Get pending requests
+        pending_requests = Friend.query.filter_by(friend_id=user_id, status='pending').all()
+
+        # Combine friends from both directions
+        friends_list = []
+        for f in friends_sent:
+            friend_user = User.query.get(f.friend_id)
+            if friend_user:
+                friends_list.append({
+                    'id': friend_user.id,
+                    'name': friend_user.display_name or f"{friend_user.first_name} {friend_user.last_name}".strip(),
+                    'share_data': f.share_data
+                })
+
+        for f in friends_received:
+            friend_user = User.query.get(f.user_id)
+            if friend_user:
+                friends_list.append({
+                    'id': friend_user.id,
+                    'name': friend_user.display_name or f"{friend_user.first_name} {friend_user.last_name}".strip(),
+                    'share_data': f.share_data
+                })
+
+        # Process pending requests
+        pending_list = []
+        for req in pending_requests:
+            requester = User.query.get(req.user_id)
+            if requester:
+                pending_list.append({
+                    'id': req.id,
+                    'user_id': requester.id,
+                    'name': requester.display_name or f"{requester.first_name} {requester.last_name}".strip()
+                })
+
+        return render_template('friends.html',
+                               friends=friends_list,
+                               pending_requests=pending_list)
+
+    @app.route('/friends/search', methods=['GET', 'POST'])
+    def search_friends():
+        """Search for users to add as friends"""
+        if 'user_id' not in session:
+            flash('Please log in to search for friends.', 'warning')
+            return redirect(url_for('login'))
+
+        user_id = session['user_id']
+        query = request.args.get('query', '')
+
+        if not query:
+            return render_template('friend_search.html', results=[], query='')
+
+        # Search for users by name or email
+        results = User.query.filter(
+            User.id != user_id,
+            db.or_(
+                User.display_name.ilike(f'%{query}%'),
+                User.first_name.ilike(f'%{query}%'),
+                User.last_name.ilike(f'%{query}%'),
+                User.email.ilike(f'%{query}%')
+            )
+        ).all()
+
+        # Check existing friendship status
+        processed_results = []
+        for user in results:
+            # Check if already friends or request pending
+            friendship_sent = Friend.query.filter_by(user_id=user_id, friend_id=user.id).first()
+            friendship_received = Friend.query.filter_by(user_id=user.id, friend_id=user_id).first()
+
+            status = 'none'
+            if friendship_sent:
+                status = friendship_sent.status
+            elif friendship_received:
+                status = friendship_received.status
+
+            processed_results.append({
+                'id': user.id,
+                'name': user.display_name or f"{user.first_name} {user.last_name}".strip(),
+                'email': user.email,
+                'status': status
+            })
+
+        return render_template('friend_search.html', results=processed_results, query=query)
+
+    @app.route('/friends/add', methods=['POST'])
+    def add_friend():
+        """Send a friend request"""
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        user_id = session['user_id']
+        friend_id = request.form.get('friend_id')
+
+        if not friend_id:
+            flash('Invalid friend request.', 'danger')
+            return redirect(url_for('friends'))
+
+        if user_id == friend_id:
+            flash('You cannot add yourself as a friend.', 'warning')
+            return redirect(url_for('friends'))
+
+        # Check if friend request already exists
+        existing = Friend.query.filter_by(user_id=user_id, friend_id=friend_id).first()
+        if existing:
+            flash('Friend request already sent.', 'info')
+            return redirect(url_for('friends'))
+
+        # Check if they sent you a request first
+        existing = Friend.query.filter_by(user_id=friend_id, friend_id=user_id).first()
+        if existing:
+            if existing.status == 'pending':
+                # Auto-accept if they sent you a request
+                existing.status = 'accepted'
+                db.session.commit()
+                flash('Friend request accepted!', 'success')
+                return redirect(url_for('friends'))
+
+        # Create new friend request
+        new_request = Friend(user_id=user_id, friend_id=friend_id, status='pending')
+        db.session.add(new_request)
+        db.session.commit()
+
+        flash('Friend request sent!', 'success')
+        return redirect(url_for('friends'))
+
+    @app.route('/friends/accept', methods=['POST'])
+    def accept_friend():
+        """Accept a friend request"""
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        user_id = session['user_id']
+        request_id = request.form.get('request_id')
+
+        friend_request = Friend.query.filter_by(id=request_id, friend_id=user_id, status='pending').first()
+
+        if not friend_request:
+            flash('Friend request not found.', 'danger')
+            return redirect(url_for('friends'))
+
+        friend_request.status = 'accepted'
+        db.session.commit()
+
+        flash('Friend request accepted!', 'success')
+        return redirect(url_for('friends'))
+
+    @app.route('/friends/reject', methods=['POST'])
+    def reject_friend():
+        """Reject a friend request"""
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        user_id = session['user_id']
+        request_id = request.form.get('request_id')
+
+        friend_request = Friend.query.filter_by(id=request_id, friend_id=user_id, status='pending').first()
+
+        if not friend_request:
+            flash('Friend request not found.', 'danger')
+            return redirect(url_for('friends'))
+
+        friend_request.status = 'rejected'
+        db.session.commit()
+
+        flash('Friend request rejected.', 'info')
+        return redirect(url_for('friends'))
+
+    @app.route('/friends/toggle-share', methods=['POST'])
+    def toggle_share():
+        """Toggle data sharing with a friend"""
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        user_id = session['user_id']
+        friend_id = request.form.get('friend_id')
+
+        # Check both directions of friendship
+        friendship = Friend.query.filter_by(user_id=user_id, friend_id=friend_id, status='accepted').first()
+        if not friendship:
+            friendship = Friend.query.filter_by(user_id=friend_id, friend_id=user_id, status='accepted').first()
+
+        if not friendship:
+            return jsonify({'error': 'Friendship not found'}), 404
+
+        # Toggle share status
+        friendship.share_data = not friendship.share_data
+        db.session.commit()
+
+        return jsonify({'success': True, 'sharing': friendship.share_data})
+
+    @app.route('/friends/<friend_id>/visualise')
+    def friend_visualise(friend_id):
+        """View a friend's visualisation data"""
+        if 'user_id' not in session:
+            flash('Please log in first.', 'warning')
+            return redirect(url_for('login'))
+
+        user_id = session['user_id']
+
+        # Check if friends with sharing enabled
+        friendship1 = Friend.query.filter_by(user_id=user_id, friend_id=friend_id, status='accepted',
+                                             share_data=True).first()
+        friendship2 = Friend.query.filter_by(user_id=friend_id, friend_id=user_id, status='accepted',
+                                             share_data=True).first()
+
+        if not friendship1 and not friendship2:
+            flash('You do not have permission to view this data.', 'warning')
+            return redirect(url_for('friends'))
+
+        friend = User.query.get(friend_id)
+        if not friend:
+            flash('Friend not found.', 'danger')
+            return redirect(url_for('friends'))
+
+        # Get time range from query parameters (default to medium_term)
+        time_range = request.args.get('time_range', 'medium_term')
+
+        # Get friend's mood data - similar logic as in the visualise route
+        # Fetch all mood labels for this friend from the AudioFeatures table
+        all_features = AudioFeatures.query.join(Track, AudioFeatures.track_id == Track.id).filter(
+            Track.user_id == friend_id
+        ).all()
+
+        # Count how many times each mood appears
+        from collections import Counter
+        mood_counts = Counter(f.mood for f in all_features)
+        total = sum(mood_counts.values()) or 1  # avoid division by zero
+
+        # Build mood_data with percentage breakdown
+        mood_data = {}
+        for mood, count in mood_counts.items():
+            # Skip if mood is None
+            if not mood:
+                continue
+
+            mood_data[mood.lower()] = {
+                "percentage": round(100 * count / total),  # Convert to percentage
+                "top_track": None,  # You can populate this if you have the data
+                "recommended_tracks": []  # You can populate this if you have the data
+            }
+
+        # Generate or fetch personality data
+        personality_data = {
+            "mbti": "INTJ",  # This should be fetched from the database if available
+            "summary": "Strategic, independent, and insightful.",
+            "related_songs": []  # You can populate this if you have the data
+        }
+
+        # Pass friend's name to the template
+        friend_name = friend.display_name or f"{friend.first_name} {friend.last_name}".strip()
+
+        return render_template('visualise.html',
+                               first_name=friend_name,
+                               time_range=time_range,
+                               mood_data=mood_data,
+                               personality=personality_data,
+                               is_friend_view=True,
+                               friend_id=friend_id)
 
     # ----------------------------------------------------------
     # API Endpoint for Mood Data (AJAX)
@@ -468,9 +912,6 @@ def create_app(config_name='development'):
                     )
                     db.session.add(track)
 
-                    
-
-
                 track_ids.append(item['id'])
 
             db.session.commit()
@@ -499,8 +940,6 @@ def create_app(config_name='development'):
                 'trap': 'Angry'
             }
 
-            
-
             for artist_id in artist_ids:
                 genres = genre_map.get(artist_id, [])
                 matched = False
@@ -513,7 +952,6 @@ def create_app(config_name='development'):
                             break
                     if matched:
                         break
-
 
         return dict(mood_counts)
 
@@ -547,7 +985,6 @@ def create_app(config_name='development'):
 
         # Update user's access token and expiry
         user.access_token = token_data['access_token']
-
 
         # Refresh token is only provided if it has changed
         if 'refresh_token' in token_data:
@@ -613,7 +1050,6 @@ def create_app(config_name='development'):
 
         db.session.commit()
 
-
     # ----------------------------------------------------------
     # Logout Route
     # ----------------------------------------------------------
@@ -622,7 +1058,6 @@ def create_app(config_name='development'):
         session.clear()
         flash('You have been logged out.', 'info')
         return redirect(url_for('index'))
-
 
     # ----------------------------------------------------------
     # Admin View Users Route (kept from original app.py)

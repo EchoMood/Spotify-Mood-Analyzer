@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Friends - Spotify Mood Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/visualise.css') }}">
+    <style>
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .search-box button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background-color: #7b2ff7;
+            color: white;
+            cursor: pointer;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .user-actions button {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .button-primary {
+            background-color: #7b2ff7;
+            color: white;
+        }
+
+        .button-secondary {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .status-text {
+            font-style: italic;
+            color: #cccccc;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Section: Dark cosmic theme -->
+    <section class="background">
+        <h1 class="page-title">Find Friends</h1>
+        <p class="subheading">Search for friends to connect with</p>
+    </section>
+
+    <div class="search-container">
+        <!-- Search for friends -->
+        <form action="{{ url_for('search_friends') }}" method="GET" class="search-box">
+            <input type="text" name="query" value="{{ query }}" placeholder="Search for friends by name or email">
+            <button type="submit">Search</button>
+        </form>
+
+        <!-- Search Results -->
+        {% if query %}
+            <h2 class="section-title">Search Results for "{{ query }}"</h2>
+
+            {% if results %}
+                {% for user in results %}
+                    <div class="result-card">
+                        <div class="user-info">
+                            <h3>{{ user.name }}</h3>
+                            <p>{{ user.email }}</p>
+                        </div>
+                        <div class="user-actions">
+                            {% if user.status == 'none' %}
+                                <form action="{{ url_for('add_friend') }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="friend_id" value="{{ user.id }}">
+                                    <button type="submit" class="button-primary">Send Friend Request</button>
+                                </form>                            {% elif user.status == 'pending' %}
+                                <span class="status-text">Friend request pending</span>
+                            {% elif user.status == 'accepted' %}
+                                <span class="status-text">Already friends</span>
+                            {% elif user.status == 'rejected' %}
+                                <span class="status-text">Request rejected</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No users found matching "{{ query }}"</p>
+            {% endif %}
+        {% endif %}
+
+        <p><a href="{{ url_for('friends') }}" class="button-secondary">Back to Friends</a></p>
+    </div>
+</body>
+</html>

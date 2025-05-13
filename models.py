@@ -16,6 +16,7 @@ class User(db.Model):
     age = db.Column(db.Integer)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(128))  # Optional for OAuth users
+    spotify_id = db.Column(db.String(50), unique=True, nullable=True)
 
     # Fields from Spotify model
     display_name = db.Column(db.String(100))
@@ -25,11 +26,22 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
 
+    registration_method = db.Column(db.String(20), default='traditional')  # 'traditional' or 'spotify'
+
+    friends = db.relationship('Friend',
+                              primaryjoin="and_(User.id==Friend.user_id, Friend.status=='accepted')",
+                              backref='user_friend', lazy='dynamic',
+                              overlaps="friend_requests_sent")
     # Authentication methods
     @property
-    def is_oauth_user(self):
-        """Check if user was created through OAuth."""
+    def has_spotify_connected(self):
+        """Check if user has connected their Spotify account."""
         return self.access_token is not None
+
+    # @property
+    # def is_oauth_user(self):
+    #     """Check if user was created through OAuth."""
+    #     return self.access_token is not None
 
     def set_password(self, password):
         """Hash and set password for traditional login."""
@@ -62,6 +74,27 @@ class Track(db.Model):
         db.PrimaryKeyConstraint('id', 'user_id', 'time_range'),
     )
 
+
+class Friend(db.Model):
+    __tablename__ = 'friend'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(50), db.ForeignKey('user.id'), nullable=False)
+    friend_id = db.Column(db.String(50), db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # 'pending', 'accepted', 'rejected'
+    share_data = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id],
+                           backref=db.backref('friend_requests_sent',
+                                              lazy='dynamic',
+                                              overlaps="user_friend"),
+                           overlaps="friends,user_friend")
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'friend_id', name='unique_friendship'),
+    )
 
 class AudioFeatures(db.Model):
     id = db.Column(db.String(50), primary_key=True)
