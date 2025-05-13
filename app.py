@@ -528,11 +528,8 @@ def create_app(config_name='development'):
         session['state'] = state
         session['linking'] = True  # Flag to indicate we're linking accounts
 
-        # Define scopes needed for the application
-        scope = 'user-top-read user-read-private user-read-recently-played'
-
         # Get authorization URL from Spotify API utility
-        auth_url = spotify_api.get_auth_url(state, scope)
+        auth_url = spotify_api.get_auth_url(state)
 
         return redirect(auth_url)
 

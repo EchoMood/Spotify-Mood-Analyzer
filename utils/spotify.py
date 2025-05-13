@@ -43,7 +43,7 @@ class SpotifyAPI:
         self.token_url = app.config['TOKEN_URL']
         self.api_base_url = app.config['API_BASE_URL']
 
-    def get_auth_url(self, state, scope=None):
+    def get_auth_url(self, state, scope="user-top-read user-read-private user-read-recently-played user-read-email"):
         """
         Generate the Spotify authorization URL.
 
@@ -54,9 +54,6 @@ class SpotifyAPI:
         Returns:
             Authorization URL for Spotify login
         """
-        if scope is None:
-            scope = 'user-read-private user-read-email user-top-read'
-
         params = {
             'client_id': self.client_id,
             'response_type': 'code',
