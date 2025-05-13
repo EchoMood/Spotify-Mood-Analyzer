@@ -269,7 +269,7 @@ def create_app(config_name='development'):
         session['state'] = state
 
         # Define scopes needed for the application
-        scope = 'user-top-read user-read-private user-read-recently-played'
+        scope = 'user-top-read user-read-private user-read-recently-played user-read-email'
 
         # Get authorization URL from Spotify API utility
         auth_url = spotify_api.get_auth_url(state, scope)
