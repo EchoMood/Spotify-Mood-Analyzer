@@ -1,4 +1,5 @@
 # app.py – Integrated EchoMood Flask Application
+import socket
 import os
 import uuid
 from datetime import datetime, timedelta
@@ -145,7 +146,33 @@ def create_app(config_name='development'):
             flash('Account created successfully! Connect your Spotify account to unlock all features.', 'success')
             # new dashboard with connect via spotify option
             return redirect(url_for('dashboard'))
-            # return redirect(url_for('login'))
+        
+        # Handle Spotify signup continuation
+        if 'spotify_user_id' in session:
+            # Spotify signup continuation
+            user_id = session['spotify_user_id']
+            display_name = session.get('display_name', '')
+            access_token = session.get('access_token')
+            refresh_token = session.get('refresh_token')
+            token_expiry = datetime.fromisoformat(session.get('token_expiry'))
+
+            new_user = User(
+                id=user_id,
+                email=form.email.data,
+                display_name=display_name,
+                first_name=display_name.split()[0] if display_name else '',
+                access_token=access_token,
+                refresh_token=refresh_token,
+                token_expiry=token_expiry,
+                last_login=datetime.utcnow()
+            )
+            new_user.set_password(form.password.data)
+
+            db.session.add(new_user)
+            db.session.commit()
+            session.clear()
+            flash("Account created successfully!", "success")
+            return redirect(url_for('login'))
 
         return render_template('signup_cred.html', form=form)
 
@@ -256,15 +283,20 @@ def create_app(config_name='development'):
     @app.route('/callback')
     def callback():
         # Verify state to prevent CSRF attacks
+        print("State from request:", request.args.get('state'))
         if request.args.get('state') != session.get('state'):
             flash('Authentication error. Please try again.', 'danger')
             return redirect(url_for('index'))
-
+        print("State verified successfully.")
+        
         # Check for errors in the callback
         if request.args.get('error'):
             flash('Authentication was denied.', 'warning')
             return redirect(url_for('index'))
-
+        print("No error in callback.")
+        
+        # Check if the code is present in the callback
+        print("Code from request:", request.args.get('code'))
         # Get the authorization code
         code = request.args.get('code')
 
@@ -274,7 +306,9 @@ def create_app(config_name='development'):
 
         # Exchange code for access token
         token_data = spotify_api.get_access_token(code)
-
+        print("Token data:", token_data)
+        
+        # Check if token data is valid
         if not token_data:
             flash('Failed to authenticate with Spotify.', 'danger')
             return redirect(url_for('index'))
@@ -288,6 +322,7 @@ def create_app(config_name='development'):
 
         # Get user profile using Spotify API
         user_data = spotify_api.get_user_profile(access_token)
+        print("User data:", user_data)
 
         # Check if we're linking an existing account
         linking = session.pop('linking', False)
@@ -305,6 +340,7 @@ def create_app(config_name='development'):
                 flash('Spotify account linked successfully!', 'success')
                 return redirect(url_for('dashboard'))
 
+        # Check if user data is valid
         if not user_data:
             flash('Failed to retrieve user information.', 'danger')
             return redirect(url_for('index'))
@@ -329,6 +365,19 @@ def create_app(config_name='development'):
 
             user.last_login = datetime.utcnow()
         else:
+            # Check if email is returned by Spotify
+            if not user_data.get('email'):
+                # Store Spotify data in session and redirect to signup credential page
+                session['spotify_id'] = user_data['id']
+                session['display_name'] = user_data.get('display_name', '')
+                session['access_token'] = access_token
+                session['refresh_token'] = refresh_token
+                session['token_expiry'] = token_expiry.isoformat()  # Store as string for JSON compatibility
+                session['spotify_login_pending'] = True  # flag to signal pending signup
+
+                flash("We couldn't retrieve your email from Spotify. Please complete your signup.", 'warning')
+                return redirect(url_for('signup_login_credentials'))
+
             # Create new user from Spotify data
             display_name = user_data.get('display_name', '')
             first_name = display_name.split()[0] if display_name else ''
@@ -348,7 +397,7 @@ def create_app(config_name='development'):
                 last_login=datetime.utcnow()
             )
             db.session.add(user)
-
+            
         db.session.commit()
 
         # Store user info in session
@@ -447,8 +496,6 @@ def create_app(config_name='development'):
                 "top_track": None,  # TODO: You can add top track per mood here
                 "recommended_tracks": []  # TODO: You can add recommendations here
             }
-
-
 
         # Generate or fetch personality data
         personality_data = {
@@ -865,9 +912,6 @@ def create_app(config_name='development'):
                     )
                     db.session.add(track)
 
-                    
-
-
                 track_ids.append(item['id'])
 
             db.session.commit()
@@ -896,8 +940,6 @@ def create_app(config_name='development'):
                 'trap': 'Angry'
             }
 
-            
-
             for artist_id in artist_ids:
                 genres = genre_map.get(artist_id, [])
                 matched = False
@@ -910,7 +952,6 @@ def create_app(config_name='development'):
                             break
                     if matched:
                         break
-
 
         return dict(mood_counts)
 
@@ -944,7 +985,6 @@ def create_app(config_name='development'):
 
         # Update user's access token and expiry
         user.access_token = token_data['access_token']
-
 
         # Refresh token is only provided if it has changed
         if 'refresh_token' in token_data:
@@ -1010,7 +1050,6 @@ def create_app(config_name='development'):
 
         db.session.commit()
 
-
     # ----------------------------------------------------------
     # Logout Route
     # ----------------------------------------------------------
@@ -1019,7 +1058,6 @@ def create_app(config_name='development'):
         session.clear()
         flash('You have been logged out.', 'info')
         return redirect(url_for('index'))
-
 
     # ----------------------------------------------------------
     # Admin View Users Route (kept from original app.py)
@@ -1057,6 +1095,17 @@ def create_app(config_name='development'):
 
     return app
 
+# ----------------------------------------------------------
+# Helper Function to Find Free Port
+# ----------------------------------------------------------
+def find_free_port(default=5000, max_tries=10):
+    port = default
+    for _ in range(max_tries):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            if sock.connect_ex(('127.0.0.1', port)) != 0:
+                return port
+            port += 1
+    raise OSError("No available port found.")
 
 # Create app instance for running directly
 app = create_app()
@@ -1064,5 +1113,6 @@ app = create_app()
 # Main Application Entry Point
 if __name__ == '__main__':
     # for production
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', find_free_port()))
+    # for local testing
     app.run(host='0.0.0.0', port=port, debug=False)
