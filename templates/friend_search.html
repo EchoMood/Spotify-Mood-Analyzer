@@ -89,7 +89,7 @@
 
     <div class="search-container">
         <!-- Search for friends -->
-        <form action="{{ url_for('search_friends') }}" method="GET" class="search-box">
+        <form action="{{ url_for('friend.search_friends') }}" method="GET" class="search-box">
             <input type="text" name="query" value="{{ query }}" placeholder="Search for friends by name or email">
             <button type="submit">Search</button>
         </form>
@@ -107,7 +107,7 @@
                         </div>
                         <div class="user-actions">
                             {% if user.status == 'none' %}
-                                <form action="{{ url_for('add_friend') }}" method="POST">
+                                <form action="{{ url_for('friend.add_friend') }}" method="POST">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="friend_id" value="{{ user.id }}">
                                     <button type="submit" class="button-primary">Send Friend Request</button>
@@ -126,7 +126,7 @@
             {% endif %}
         {% endif %}
 
-        <p><a href="{{ url_for('friends') }}" class="button-secondary">Back to Friends</a></p>
+        <p><a href="{{ url_for('friend.friends') }}" class="button-secondary">Back to Friends</a></p>
     </div>
 </body>
 </html>

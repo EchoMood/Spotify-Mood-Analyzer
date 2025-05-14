@@ -1,6 +1,7 @@
 # test_data.py
-from app import create_app, db
-from models import User, Friend
+from app import create_app
+from app.models import db, User, Friend
+
 from datetime import datetime
 import uuid
 import random

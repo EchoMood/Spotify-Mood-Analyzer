@@ -16,10 +16,10 @@
     <section class="background">
 
         <nav class="navigation">
-            <a href="{{ url_for('index') }}">Home</a>
-            <a href="{{ url_for('friends') }}">Friends</a>
+            <a href="{{ url_for('user.index') }}">Home</a>
+            <a href="{{ url_for('friend.friends') }}">Friends</a>
             {% if is_friend_view %}
-                <a href="{{ url_for('visualise') }}">My Profile</a>
+                <a href="{{ url_for('visual.visualise') }}">My Profile</a>
             {% endif %}
         </nav>
         
