@@ -82,6 +82,49 @@ def create_app(config_name='development'):
     def index():
         return render_template('index.html')
 
+    ## ADMIN ROUTE -- inspect database
+    #/admin/inspect-db/fixed-dev_secret_key
+    @app.route('/admin/inspect-db/<secret_token>', methods=['GET'])
+    def inspect_db(secret_token):
+        # Simple security check - use a long, random string in production
+        if secret_token != app.config.get('SECRET_KEY', ''):
+            print("key: ", app.config.get('SECRET_KEY', ''))
+            return "Unauthorized", 401
+
+        # Get all tables
+        users = User.query.all()
+
+        friends = Friend.query.all()
+        # Get friendship details with names
+        friendship_details = []
+        for f in friends:
+            user = User.query.get(f.user_id)
+            friend = User.query.get(f.friend_id)
+            friendship_details.append({
+                'id': f.id,
+                'user_name': user.display_name or f"{user.first_name} {user.last_name}".strip() if user else "Unknown",
+                'user_id': f.user_id,
+                'friend_name': friend.display_name or f"{friend.first_name} {friend.last_name}".strip() if friend else "Unknown",
+                'friend_id': f.friend_id,
+                'status': f.status,
+                'share_data': f.share_data,
+                'created_at': f.created_at
+            })
+
+        # Get basic statistics
+        stats = {
+            'users': User.query.count(),
+            'friends_pending': Friend.query.filter_by(status='pending').count(),
+            'friends_accepted': Friend.query.filter_by(status='accepted').count(),
+            'friends_rejected': Friend.query.filter_by(status='rejected').count(),
+        }
+
+        return render_template('admin_inspect.html',
+                               users=users,
+                               friends=friends,
+                               friendship_details=friendship_details,
+                               stats=stats)
+
     # ----------------------------------------------------------
     # Step 1: Basic Info for Traditional Signup
     # ----------------------------------------------------------
