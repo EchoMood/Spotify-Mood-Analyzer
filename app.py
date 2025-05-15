@@ -353,6 +353,7 @@ def create_app(config_name='development'):
         
         # Check if token data is valid
         if not token_data:
+            print("❌ Failed to get access token. Response:", token_data)
             flash('Failed to authenticate with Spotify.', 'danger')
             return redirect(url_for('index'))
 

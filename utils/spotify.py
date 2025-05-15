@@ -55,7 +55,7 @@ class SpotifyAPI:
             Authorization URL for Spotify login
         """
         if scope is None:
-            scope = 'user-read-private user-read-email user-top-read'
+            scope = 'user-read-private user-read-email user-top-read user-read-recently-played'
 
         params = {
             'client_id': self.client_id,
@@ -132,15 +132,18 @@ class SpotifyAPI:
         headers = {
             'Authorization': f'Bearer {access_token}'
         }
-
         print(f"{self.api_base_url}me", "headers= ", headers)
+        try:
+            response = requests.get(f"{self.api_base_url}me", headers=headers)
+            if response.status_code == 200:
+                print("DEBUG successful call to spotify apii, response= ", response.json())
+                return response.json()
+            else:
+                print(f"Error response from Spotify: {response.text}")
+                return None
 
-        response = requests.get(f"{self.api_base_url}me", headers=headers)
-        if response.status_code == 200:
-            print("DEBUG successful call to spotify apii, response= ", response.json())
-            return response.json()
-        else:
-            print("DEBUG call was not successful")
+        except Exception as e:
+            print(f"Exception in get_user_profile: {str(e)}")
             return None
 
     def get_top_tracks(self, access_token, time_range='medium_term', limit=50):
