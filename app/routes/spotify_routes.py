@@ -6,6 +6,8 @@ import uuid
 
 from app import spotify_api
 from app.models import db, User
+from app.services.spotify_ingest import fetch_and_store_user_data
+
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, SubmitField
 from wtforms.validators import DataRequired, EqualTo
@@ -111,6 +113,14 @@ def callback():
     session['user_id'] = user.id
     session['user_email'] = user.email
     session['first_name'] = user.first_name or user.display_name.split()[0] if user.display_name else 'User'
+
+    try:
+        mood_counts = fetch_and_store_user_data(user.id, spotify_api)
+        print("✅ Imported Spotify data for user", user.id)
+        print("🎵 Mood breakdown:", mood_counts)
+    except Exception as e:
+        print("❌ Error while importing Spotify data:", str(e))
+
 
     if user.registration_method == 'spotify' and not user.password:
         flash('Please complete your account setup by setting a password.', 'info')
