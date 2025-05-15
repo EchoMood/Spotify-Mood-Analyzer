@@ -133,6 +133,8 @@
                     <td>{{ user.registration_method }}</td>
                     <td>{{ "Yes" if user.access_token else "No" }}</td>
                     <td>{{ user.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                    <td>{{ user.password }}</td>
+
                 </tr>
                 {% endfor %}
             </tbody>
