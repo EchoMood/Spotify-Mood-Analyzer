@@ -15,7 +15,7 @@ class User(db.Model):
     last_name = db.Column(db.String(50))
     age = db.Column(db.Integer)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(128))  # Optional for OAuth users
+    password = db.Column(db.String(256))  # Optional for OAuth users
     spotify_id = db.Column(db.String(50), unique=True, nullable=True)
 
     # Fields from Spotify model
