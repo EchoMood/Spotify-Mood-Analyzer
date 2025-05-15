@@ -1091,12 +1091,14 @@ def create_app(config_name='development'):
             track_ids = []
             artist_ids = []
 
-            for i, item in enumerate(tracks_data['items']):
-                existing_track = Track.query.filter_by(
-                    id=item['id'],
-                    user_id=user.id,
-                    time_range=time_range
-                ).first()
+            with db.session.no_autoflush:
+                for i, item in enumerate(tracks_data['items']):
+                    # Correctly query for existing track with all three primary key components
+                    existing_track = Track.query.filter_by(
+                        id=item['id'],
+                        user_id=user.id,
+                        time_range=time_range
+                    ).first()
 
                 # Extract artist ID for genre fetching
                 artist_id = item['artists'][0]['id']
