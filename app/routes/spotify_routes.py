@@ -51,6 +51,11 @@ def callback():
 
     user_data = spotify_api.get_user_profile(access_token)
 
+    if user_data is None:
+            # Failed to get user data from Spotify
+            flash('Failed to retrieve user information from Spotify. Please try again.', 'danger')
+            return redirect(url_for('user.index'))
+
     linking = session.pop('linking', False)
     if linking and 'user_id' in session:
         existing_user = User.query.get(session['user_id'])

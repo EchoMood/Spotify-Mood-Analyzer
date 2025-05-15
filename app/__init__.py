@@ -49,5 +49,8 @@ def create_app(config_name='development'):
     from app.routes.visualisation_routes import visual_bp
     app.register_blueprint(visual_bp)
 
+    from app.routes.admin_routes import admin_bp
+    app.register_blueprint(admin_bp)
+
 
     return app
