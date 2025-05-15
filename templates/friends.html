@@ -138,7 +138,7 @@
 
     <div class="friends-container">
         <!-- Search for friends -->
-        <form action="{{ url_for('search_friends') }}" method="GET" class="search-box">
+        <form action="{{ url_for('friend.search_friends') }}" method="GET" class="search-box">
             <input type="text" name="query" placeholder="Search for friends by name or email">
             <button type="submit">Search</button>
         </form>
@@ -159,7 +159,7 @@
                                    {% if friend.share_data %}checked{% endif %}>
                             <span class="slider"></span>
                         </label>
-                        <a href="{{ url_for('friend_visualise', friend_id=friend.id) }}" class="button-primary">View Profile</a>
+                        <a href="{{ url_for('friend.friend_visualise', friend_id=friend.id) }}" class="button-primary">View Profile</a>
                     </div>
                 </div>
             {% endfor %}
@@ -179,11 +179,11 @@
                             <p>Wants to be your friend</p>
                         </div>
                         <div class="friend-actions">
-                            <form action="{{ url_for('accept_friend') }}" method="POST" style="display: inline;">
+                            <form action="{{ url_for('friend.accept_friend') }}" method="POST" style="display: inline;">
                                 <input type="hidden" name="request_id" value="{{ request.id }}">
                                 <button type="submit" class="button-primary">Accept</button>
                             </form>
-                            <form action="{{ url_for('reject_friend') }}" method="POST" style="display: inline;">
+                            <form action="{{ url_for('friend.reject_friend') }}" method="POST" style="display: inline;">
                                 <input type="hidden" name="request_id" value="{{ request.id }}">
                                 <button type="submit" class="button-secondary">Reject</button>
                             </form>

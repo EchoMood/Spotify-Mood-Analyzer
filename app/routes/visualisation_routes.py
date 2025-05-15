@@ -1,0 +1,72 @@
+# app/routes/visualisation_routes.py
+
+from flask import Blueprint, render_template, session, redirect, url_for, request, flash, jsonify
+from collections import Counter
+
+from app.models import User
+
+visual_bp = Blueprint('visual', __name__)
+
+@visual_bp.route('/visualise')
+def visualise():
+    print("Access Token from session:", session.get('access_token'))
+
+    if 'user_id' not in session:
+        flash('Please log in to view your visualisation.', 'warning')
+        return redirect(url_for('user.login'))
+
+    user_id = session['user_id']
+    user = User.query.get(user_id)
+
+    if not user:
+        flash('User not found. Please log in again.', 'warning')
+        session.clear()
+        return redirect(url_for('user.login'))
+
+    time_range = request.args.get('time_range', 'medium_term')
+
+    mood_counts = session.get('mood_counts', {})
+    print("🔍 mood_counts:", mood_counts)
+
+    total = sum(mood_counts.values()) or 1
+
+    mood_data = {
+        mood.lower(): {
+            "percentage": round(100 * count / total),
+            "top_track": None,
+            "recommended_tracks": []
+        }
+        for mood, count in mood_counts.items()
+    }
+
+    personality_data = {
+        "mbti": "INTJ",
+        "summary": "Strategic, independent, and insightful. You're a deep thinker who appreciates complex musical compositions and meaningful lyrics.",
+        "related_songs": [
+            {
+                "name": "Lateralus",
+                "artist": "Tool",
+                "image": "https://i.scdn.co/image/ab67616d0000b2739b2c7c8dd5136c2fa101da20"
+            }
+        ]
+    }
+
+    return render_template('visualise.html',
+                           first_name=session.get('first_name', 'User'),
+                           time_range=time_range,
+                           mood_data=mood_data,
+                           personality=personality_data)
+
+
+@visual_bp.route('/api/mood-data')
+def mood_data_api():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    time_range = request.args.get('time_range', 'medium_term')
+    user_id = session['user_id']
+
+    # TODO: Add logic here if needed to compute mood_data from DB
+    mood_data = {}
+
+    return jsonify(mood_data)

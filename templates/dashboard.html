@@ -89,13 +89,13 @@
                 <div class="connect-spotify">
                     <h3>Connect Spotify</h3>
                     <p>To analyze your music mood and get personalized recommendations, connect your Spotify account.</p>
-                    <a href="{{ url_for('oauth_spotify') }}" class="get-started-btn">Connect Spotify</a>
+                    <a href="{{ url_for('spotify.oauth_spotify') }}" class="get-started-btn">Connect Spotify</a>
                 </div>
             {% else %}
                 <div class="spotify-connected">
                     <h3>Spotify Connected!</h3>
                     <p>Your Spotify account is connected. View your mood analysis or explore your friends' music tastes.</p>
-                    <a href="{{ url_for('visualise') }}" class="get-started-btn">View My Mood Analysis</a>
+                    <a href="{{ url_for('visual.visualise') }}" class="get-started-btn">View My Mood Analysis</a>
                 </div>
             {% endif %}
 
@@ -112,13 +112,13 @@
                                 <h4>{{ request.name }}</h4>
                             </div>
                             <div class="request-actions">
-                                <form action="{{ url_for('accept_friend') }}" method="POST">
+                                <form action="{{ url_for('friend.accept_friend') }}" method="POST">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="request_id" value="{{ request.id }}">
                                     <button type="submit" class="accept-btn">Accept</button>
                                 </form>
 
-                                <form action="{{ url_for('reject_friend') }}" method="POST">
+                                <form action="{{ url_for('friend.reject_friend') }}" method="POST">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="request_id" value="{{ request.id }}">
                                     <button type="submit" class="reject-btn">Reject</button>
@@ -130,7 +130,7 @@
                     <p>No pending friend requests</p>
                 {% endif %}
 
-                <a href="{{ url_for('search_friends') }}" class="get-started-btn" style="display: inline-block; margin-top: 15px;">Find Friends</a>
+                <a href="{{ url_for('friend.search_friends') }}" class="get-started-btn" style="display: inline-block; margin-top: 15px;">Find Friends</a>
             </div>
 
             <!-- Friends List Section -->
@@ -149,9 +149,9 @@
                                         <span class="sharing-disabled">✗ Sharing disabled</span>
                                     {% endif %}
                                 </p>
-                                <a href="{{ url_for('friend_visualise', friend_id=friend.id) }}" class="get-started-btn" style="font-size: 0.9em; padding: 6px 12px; display: inline-block; margin-top: 10px;">View Profile</a>
+                                <a href="{{ url_for('friend.friend_visualise', friend_id=friend.id) }}" class="get-started-btn" style="font-size: 0.9em; padding: 6px 12px; display: inline-block; margin-top: 10px;">View Profile</a>
 
-                                <form action="{{ url_for('toggle_share') }}" method="POST" style="margin-top: 10px;">
+                                <form action="{{ url_for('friend.toggle_share') }}" method="POST" style="margin-top: 10px;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="friend_id" value="{{ friend.id }}">
                                     <button type="submit" class="get-started-btn" style="font-size: 0.8em; padding: 6px 12px; background-color: rgba(255, 255, 255, 0.2);">
@@ -167,7 +167,7 @@
                     </div>
                 {% else %}
                     <p>You don't have any friends yet</p>
-                    <a href="{{ url_for('search_friends') }}" class="get-started-btn" style="display: inline-block; margin-top: 10px;">Find Friends</a>
+                    <a href="{{ url_for('friend.search_friends') }}" class="get-started-btn" style="display: inline-block; margin-top: 10px;">Find Friends</a>
                 {% endif %}
             </div>
 
@@ -177,13 +177,13 @@
                 <p>Manage your account details and preferences.</p>
 
                 {% if user.access_token %}
-                    <form action="{{ url_for('unlink_spotify') }}" method="POST" style="display:inline; margin-top: 10px;">
+                    <form action="{{ url_for('spotify.unlink_spotify') }}" method="POST" style="display:inline; margin-top: 10px;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="get-started-btn" style="background-color: #E74C3C;">Disconnect Spotify</button>
                     </form>
                 {% endif %}
 
-                <form action="{{ url_for('logout') }}" method="POST" style="display:inline; margin-left: 10px; margin-top: 10px;">
+                <form action="{{ url_for('user.logout') }}" method="POST" style="display:inline; margin-left: 10px; margin-top: 10px;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="get-started-btn" style="background-color: #7f8c8d;">Logout</button>
                 </form>
