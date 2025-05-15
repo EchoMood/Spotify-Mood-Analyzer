@@ -6,40 +6,193 @@
     <title>Dashboard - Spotify Mood Analysis</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <style>
-        /* Additional styles for the friend management section */
-        .friends-container {
-            margin-top: 30px;
+        /* Container styles */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 20px;
-            background-color: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
         }
 
-        .request-card {
+        /* Card and section styles */
+        .card {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        /* Tabs for friends management */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #fff;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #1DB954;
+            border-radius: 3px 3px 0 0;
+        }
+
+        /* Tab content area */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Search box */
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+
+        .search-box button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            background-color: #1DB954;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+        .search-box button:hover {
+            background-color: #1ED760;
+        }
+
+        /* User cards */
+        .user-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
+            backdrop-filter: blur(5px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .request-actions {
+        .user-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-info h3 {
+            margin: 0 0 5px 0;
+            color: #fff;
+        }
+
+        .user-info p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9em;
+        }
+
+        /* Button styles */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #1DB954;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1ED760;
+        }
+
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-danger {
+            background-color: #E74C3C;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #FF5A4D;
+        }
+
+        .user-actions {
             display: flex;
             gap: 10px;
         }
 
-        .friend-list {
+        /* Friends list */
+        .friends-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
         }
 
         .friend-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
             transition: transform 0.3s ease;
         }
 
@@ -47,32 +200,54 @@
             transform: translateY(-5px);
         }
 
-        .accept-btn {
-            background-color: #1DB954;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 30px;
-            cursor: pointer;
-        }
-
-        .reject-btn {
-            background-color: #E74C3C;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 30px;
-            cursor: pointer;
+        .sharing-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            margin-top: 5px;
         }
 
         .sharing-enabled {
+            background-color: rgba(29, 185, 84, 0.2);
             color: #1DB954;
-            font-size: 0.9em;
         }
 
         .sharing-disabled {
+            background-color: rgba(231, 76, 60, 0.2);
             color: #E74C3C;
-            font-size: 0.9em;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #E74C3C;
+            color: white;
+            font-size: 12px;
+            margin-left: 5px;
+            font-weight: bold;
+        }
+
+        /* Media queries */
+        @media (max-width: 768px) {
+            .friends-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .user-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .user-actions {
+                margin-top: 15px;
+                width: 100%;
+                justify-content: flex-end;
+            }
         }
     </style>
 </head>
@@ -82,113 +257,214 @@
             <h1>Your Dashboard</h1>
         </header>
 
-        <section class="dashboard-container">
+        <div class="dashboard-container">
             <h2>Welcome, {{ user.first_name }}!</h2>
 
-            {% if not user.access_token %}
-                <div class="connect-spotify">
-                    <h3>Connect Spotify</h3>
-                    <p>To analyze your music mood and get personalized recommendations, connect your Spotify account.</p>
-                    <a href="{{ url_for('oauth_spotify') }}" class="get-started-btn">Connect Spotify</a>
-                </div>
-            {% else %}
-                <div class="spotify-connected">
-                    <h3>Spotify Connected!</h3>
-                    <p>Your Spotify account is connected. View your mood analysis or explore your friends' music tastes.</p>
-                    <a href="{{ url_for('visualise') }}" class="get-started-btn">View My Mood Analysis</a>
-                </div>
-            {% endif %}
-
-            <!-- Friend Requests Section -->
-            <div class="friends-container">
-                <h3>Friend Requests</h3>
-
-                {% if pending_requests %}
-                    <p>You have {{ pending_requests|length }} pending friend request(s):</p>
-
-                    {% for request in pending_requests %}
-                        <div class="request-card">
-                            <div>
-                                <h4>{{ request.name }}</h4>
-                            </div>
-                            <div class="request-actions">
-                                <form action="{{ url_for('accept_friend') }}" method="POST">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="request_id" value="{{ request.id }}">
-                                    <button type="submit" class="accept-btn">Accept</button>
-                                </form>
-
-                                <form action="{{ url_for('reject_friend') }}" method="POST">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="request_id" value="{{ request.id }}">
-                                    <button type="submit" class="reject-btn">Reject</button>
-                                </form>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p>No pending friend requests</p>
-                {% endif %}
-
-                <a href="{{ url_for('search_friends') }}" class="get-started-btn" style="display: inline-block; margin-top: 15px;">Find Friends</a>
-            </div>
-
-            <!-- Friends List Section -->
-            <div class="friends-container">
-                <h3>Your Friends</h3>
-
-                {% if friends %}
-                    <div class="friend-list">
-                        {% for friend in friends %}
-                            <div class="friend-card">
-                                <h4>{{ friend.name }}</h4>
-                                <p>
-                                    {% if friend.share_data %}
-                                        <span class="sharing-enabled">✓ Sharing enabled</span>
-                                    {% else %}
-                                        <span class="sharing-disabled">✗ Sharing disabled</span>
-                                    {% endif %}
-                                </p>
-                                <a href="{{ url_for('friend_visualise', friend_id=friend.id) }}" class="get-started-btn" style="font-size: 0.9em; padding: 6px 12px; display: inline-block; margin-top: 10px;">View Profile</a>
-
-                                <form action="{{ url_for('toggle_share') }}" method="POST" style="margin-top: 10px;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="friend_id" value="{{ friend.id }}">
-                                    <button type="submit" class="get-started-btn" style="font-size: 0.8em; padding: 6px 12px; background-color: rgba(255, 255, 255, 0.2);">
-                                        {% if friend.share_data %}
-                                            Disable Sharing
-                                        {% else %}
-                                            Enable Sharing
-                                        {% endif %}
-                                    </button>
-                                </form>
-                            </div>
-                        {% endfor %}
+            <!-- Spotify Connection Status -->
+            <div class="card">
+                {% if not user.access_token %}
+                    <div class="connect-spotify">
+                        <h3>Connect Spotify</h3>
+                        <p>To analyze your music mood and get personalized recommendations, connect your Spotify account.</p>
+                        <a href="{{ url_for('oauth_spotify') }}" class="btn btn-primary">Connect Spotify</a>
                     </div>
                 {% else %}
-                    <p>You don't have any friends yet</p>
-                    <a href="{{ url_for('search_friends') }}" class="get-started-btn" style="display: inline-block; margin-top: 10px;">Find Friends</a>
+                    <div class="spotify-connected">
+                        <h3>Spotify Connected</h3>
+                        <p>Your Spotify account is connected. View your mood analysis or explore your friends' music tastes.</p>
+                        <a href="{{ url_for('visualise') }}" class="btn btn-primary">View My Mood Analysis</a>
+                    </div>
                 {% endif %}
+            </div>
+
+            <!-- Friends Management Section -->
+            <div class="card">
+                <h3 class="section-title">Friends Management</h3>
+
+                <div class="tabs">
+                    <div class="tab active" data-tab="my-friends">My Friends</div>
+                    <div class="tab" data-tab="search-friends">Find Friends</div>
+                    <div class="tab" data-tab="friend-requests">
+                        Requests
+                        {% if pending_requests %}
+                            <span class="badge">{{ pending_requests|length }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- My Friends Tab Content -->
+                <div class="tab-content active" id="my-friends">
+                    {% if friends %}
+                        <div class="friends-grid">
+                            {% for friend in friends %}
+                                <div class="friend-card">
+                                    <h4>{{ friend.name }}</h4>
+
+                                    <span class="sharing-status {% if friend.share_data %}sharing-enabled{% else %}sharing-disabled{% endif %}">
+                                        {% if friend.share_data %}Sharing enabled{% else %}Sharing disabled{% endif %}
+                                    </span>
+
+                                    <div style="margin-top: 15px;">
+                                        <a href="{{ url_for('friend_visualise', friend_id=friend.id) }}" class="btn btn-primary">View Profile</a>
+
+                                        <form action="{{ url_for('toggle_share') }}" method="POST" style="margin-top: 10px;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="friend_id" value="{{ friend.id }}">
+                                            <button type="submit" class="btn btn-secondary">
+                                                {% if friend.share_data %}Disable Sharing{% else %}Enable Sharing{% endif %}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>You don't have any friends yet.</p>
+                            <button class="btn btn-primary tab-link" data-tab="search-friends">Find Friends</button>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Search Friends Tab Content -->
+                <div class="tab-content" id="search-friends">
+                    <form action="{{ url_for('search_friends') }}" method="GET" class="search-box" id="search-form">
+                        <input type="text" name="query" placeholder="Search for friends by name or email" id="search-input">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </form>
+
+                    <div id="search-results">
+                        <!-- Search results will be loaded here via AJAX -->
+                        {% if results %}
+                            <h4>Search Results for "{{ query }}"</h4>
+
+                            {% for user in results %}
+                                <div class="user-card">
+                                    <div class="user-info">
+                                        <h3>{{ user.name }}</h3>
+                                        <p>{{ user.email }}</p>
+                                    </div>
+                                    <div class="user-actions">
+                                        {% if user.status == 'none' %}
+                                            <form action="{{ url_for('add_friend') }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="friend_id" value="{{ user.id }}">
+                                                <button type="submit" class="btn btn-primary">Send Friend Request</button>
+                                            </form>
+                                        {% elif user.status == 'pending' %}
+                                            <span class="status-text">Friend request pending</span>
+                                        {% elif user.status == 'accepted' %}
+                                            <span class="status-text">Already friends</span>
+                                        {% elif user.status == 'rejected' %}
+                                            <span class="status-text">Request rejected</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Friend Requests Tab Content -->
+                <div class="tab-content" id="friend-requests">
+                    {% if pending_requests %}
+                        <p>You have {{ pending_requests|length }} pending friend request(s):</p>
+
+                        {% for request in pending_requests %}
+                            <div class="user-card">
+                                <div class="user-info">
+                                    <h3>{{ request.name }}</h3>
+                                    <p>Wants to be your friend</p>
+                                </div>
+                                <div class="user-actions">
+                                    <form action="{{ url_for('accept_friend') }}" method="POST" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="request_id" value="{{ request.id }}">
+                                        <button type="submit" class="btn btn-primary">Accept</button>
+                                    </form>
+
+                                    <form action="{{ url_for('reject_friend') }}" method="POST" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="request_id" value="{{ request.id }}">
+                                        <button type="submit" class="btn btn-danger">Reject</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No pending friend requests</p>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Account Settings Section -->
-            <div class="account-settings friends-container">
-                <h3>Account Settings</h3>
+            <div class="card">
+                <h3 class="section-title">Account Settings</h3>
                 <p>Manage your account details and preferences.</p>
 
-                {% if user.access_token %}
-                    <form action="{{ url_for('unlink_spotify') }}" method="POST" style="display:inline; margin-top: 10px;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="get-started-btn" style="background-color: #E74C3C;">Disconnect Spotify</button>
-                    </form>
-                {% endif %}
+                <div style="margin-top: 20px;">
+                    {% if user.access_token %}
+                        <form action="{{ url_for('unlink_spotify') }}" method="POST" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger">Disconnect Spotify</button>
+                        </form>
+                    {% endif %}
 
-                <form action="{{ url_for('logout') }}" method="POST" style="display:inline; margin-left: 10px; margin-top: 10px;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="get-started-btn" style="background-color: #7f8c8d;">Logout</button>
-                </form>
+                    <form action="{{ url_for('logout') }}" method="POST" style="display:inline; margin-left: 10px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-secondary">Logout</button>
+                    </form>
+                </div>
             </div>
-        </section>
+        </div>
     </div>
+
+    <script>
+        // Tab functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Show corresponding content
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === tabId) {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+
+            // Handle tab-link buttons inside content
+            document.querySelectorAll('.tab-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    const tabId = link.getAttribute('data-tab');
+                    document.querySelector(`.tab[data-tab="${tabId}"]`).click();
+                });
+            });
+
+            // AJAX search implementation for better UX (optional)
+            const searchForm = document.getElementById('search-form');
+            const searchInput = document.getElementById('search-input');
+            const searchResults = document.getElementById('search-results');
+
+            if (searchForm) {
+                searchForm.addEventListener('submit', function(e) {
+                    // This is just a placeholder for potential AJAX implementation
+                    // You can implement actual AJAX search if desired
+                    // For now, the form will submit normally with page reload
+                });
+            }
+        });
+    </script>
 </body>
 </html>
