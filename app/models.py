@@ -15,13 +15,13 @@ class User(db.Model):
     last_name = db.Column(db.String(50))
     age = db.Column(db.Integer)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(128))  # Optional for OAuth users
+    password = db.Column(db.String(256))  # Optional for OAuth users
     spotify_id = db.Column(db.String(50), unique=True, nullable=True)
 
     # Fields from Spotify model
     display_name = db.Column(db.String(100))
-    access_token = db.Column(db.String(200))
-    refresh_token = db.Column(db.String(200))
+    access_token = db.Column(db.String(500))
+    refresh_token = db.Column(db.String(500))
     token_expiry = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
@@ -58,7 +58,7 @@ class User(db.Model):
 class Track(db.Model):
     __tablename__ = 'track'
 
-    id = db.Column(db.String(50))
+    id = db.Column(db.String(50), unique=True)
     user_id = db.Column(db.String(50), db.ForeignKey('user.id'))
     time_range = db.Column(db.String(20))  # short_term, medium_term, long_term
 
