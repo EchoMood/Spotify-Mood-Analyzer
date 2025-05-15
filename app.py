@@ -938,8 +938,10 @@ def create_app(config_name='development'):
         for time_range in time_ranges:
             # Fetch top tracks for this time range
             tracks_data = spotify_api.get_top_tracks(user.access_token, time_range)
+            print("Tracks data", tracks_data)
 
             if not tracks_data:
+                print("DEBUG: ERROR NO TRACK DATA")
                 continue
 
             # Store track information
