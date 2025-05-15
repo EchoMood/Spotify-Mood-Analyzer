@@ -80,6 +80,10 @@
                 <div>Rejected Requests</div>
                 <div class="stat-number">{{ stats.friends_rejected }}</div>
             </div>
+                <div class="stat-card" style="background-color: #3498db;">
+                <div>Total Tracks</div>
+                <div class="stat-number">{{ stats.tracks }}</div>
+             </div>
         </div>
     </div>
 
@@ -140,5 +144,49 @@
             </tbody>
         </table>
     </div>
+
+    <div class="section">
+    <h2>Tracks by User</h2>
+    {% if tracks_by_user %}
+        {% for user_id, data in tracks_by_user.items() %}
+            <div class="user-tracks">
+                <h3>{{ data.user_name }}</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Track Name</th>
+                            <th>Artist</th>
+                            <th>Album</th>
+                            <th>Time Range</th>
+                            <th>Rank</th>
+                            <th>Popularity</th>
+                            <th>Mood</th>
+                            <th>Valence</th>
+                            <th>Energy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for track in data.tracks %}
+                        <tr>
+                            <td>{{ track.name }}</td>
+                            <td>{{ track.artist }}</td>
+                            <td>{{ track.album }}</td>
+                            <td>{{ track.time_range }}</td>
+                            <td>{{ track.rank }}</td>
+                            <td>{{ track.popularity }}</td>
+                            <td>{{ track.features.mood if track.features else "Unknown" }}</td>
+                            <td>{{ "%.2f"|format(track.features.valence) if track.features else "N/A" }}</td>
+                            <td>{{ "%.2f"|format(track.features.energy) if track.features else "N/A" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <hr style="margin: 30px 0;">
+        {% endfor %}
+    {% else %}
+        <p>No tracks found for any users.</p>
+    {% endif %}
+</div>
 </body>
 </html>

@@ -111,20 +111,37 @@ def create_app(config_name='development'):
                 'created_at': f.created_at
             })
 
+        # Get all tracks and organize them by user
+        tracks_by_user = {}
+        for user in users:
+            user_tracks = Track.query.filter_by(user_id=user.id).all()
+
+            # Only add users with tracks
+            if user_tracks:
+                # Get audio features for each track
+                for track in user_tracks:
+                    track.features = AudioFeatures.query.filter_by(track_id=track.id).first()
+
+                tracks_by_user[user.id] = {
+                    'user_name': user.display_name or f"{user.first_name} {user.last_name}".strip(),
+                    'tracks': user_tracks
+                }
+
         # Get basic statistics
         stats = {
             'users': User.query.count(),
             'friends_pending': Friend.query.filter_by(status='pending').count(),
             'friends_accepted': Friend.query.filter_by(status='accepted').count(),
             'friends_rejected': Friend.query.filter_by(status='rejected').count(),
+            'tracks': Track.query.count()  # Add track count to statistics
         }
 
         return render_template('admin_inspect.html',
                                users=users,
                                friends=friends,
                                friendship_details=friendship_details,
+                               tracks_by_user=tracks_by_user,
                                stats=stats)
-
     # ----------------------------------------------------------
     # Step 1: Basic Info for Traditional Signup
     # ----------------------------------------------------------
@@ -367,6 +384,11 @@ def create_app(config_name='development'):
         # Get user profile using Spotify API
         user_data = spotify_api.get_user_profile(access_token)
         print("User data:", user_data)
+
+        if user_data is None:
+            # Failed to get user data from Spotify
+            flash('Failed to retrieve user information from Spotify. Please try again.', 'danger')
+            return redirect(url_for('index'))
 
         # Check if we're linking an existing account
         linking = session.pop('linking', False)
