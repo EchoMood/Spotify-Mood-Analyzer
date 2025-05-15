@@ -20,8 +20,8 @@ class User(db.Model):
 
     # Fields from Spotify model
     display_name = db.Column(db.String(100))
-    access_token = db.Column(db.String(200))
-    refresh_token = db.Column(db.String(200))
+    access_token = db.Column(db.String(500))
+    refresh_token = db.Column(db.String(500))
     token_expiry = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
