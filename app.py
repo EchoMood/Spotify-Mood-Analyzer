@@ -522,7 +522,7 @@ def create_app(config_name='development'):
     # ----------------------------------------------------------
     @app.route('/visualise')
     def visualise():
-        print("Access Token from session:", session.get('access_token'))
+        """Render the visualization page with mood analysis."""
 
         # Check if user is logged in
         if 'user_id' not in session:
@@ -540,48 +540,116 @@ def create_app(config_name='development'):
         # Get time range from query parameters (default to medium_term)
         time_range = request.args.get('time_range', 'medium_term')
 
-        # # Fetch all mood labels for this user from the AudioFeatures table
-        # all_features = AudioFeatures.query.join(Track, AudioFeatures.track_id == Track.id).filter(
-        #     Track.user_id == user_id
-        # ).all()
+        # If user has Spotify connected but we don't have data, fetch it
+        if user.access_token and not session.get('mood_counts'):
+            try:
+                # Fetch user data from Spotify API
+                mood_counts = fetch_and_store_user_data(user_id, spotify_api)
 
-        # # Count how many times each mood appears
-        # mood_counts = Counter(f.mood for f in all_features)
+                # Store mood counts in session for quick access
+                if mood_counts:
+                    session['mood_counts'] = mood_counts
+            except Exception as e:
+                print(f"Error fetching Spotify data: {e}")
+                # Default mood data if fetch fails
+                mood_counts = {
+                    'Happy': 2,
+                    'Sad': 1,
+                    'Chill': 1,
+                    'Angry': 0,
+                    'Focused': 1
+                }
+                session['mood_counts'] = mood_counts
 
-        # ✅ Replace old audio_features logic with this:
-        mood_counts = session.get('mood_counts', {})
-        print("🔍 mood_counts:", mood_counts)
+        # Get mood counts from session or use default
+        mood_counts = session.get('mood_counts', {
+            'Happy': 2,
+            'Sad': 1,
+            'Chill': 1,
+            'Angry': 0,
+            'Focused': 1
+        })
 
+        # Calculate total for percentage
         total = sum(mood_counts.values()) or 1  # avoid division by zero
 
-        # Build mood_data with percentage breakdown
+        # Get tracks for the current time range
+        user_tracks = Track.query.filter_by(
+            user_id=user_id,
+            time_range=time_range
+        ).order_by(Track.rank).all()
+
+        # Get audio features for these tracks
+        track_ids = [track.id for track in user_tracks]
+        audio_features = AudioFeatures.query.filter(
+            AudioFeatures.track_id.in_(track_ids)
+        ).all()
+
+        # Map features to tracks for easy access
+        features_map = {feature.track_id: feature for feature in audio_features}
+
+        # Group tracks by mood
+        mood_to_tracks = {}
+        for track in user_tracks:
+            features = features_map.get(track.id)
+            if features and features.mood:
+                if features.mood not in mood_to_tracks:
+                    mood_to_tracks[features.mood] = []
+                mood_to_tracks[features.mood].append(track)
+
+        # Build mood_data with percentage breakdown and top tracks
         mood_data = {}
         for mood, count in mood_counts.items():
-            mood_data[mood.lower()] = {
+            # Convert mood to lowercase for template consistency
+            mood_key = mood.lower()
+            mood_data[mood_key] = {
                 "percentage": round(100 * count / total),  # Convert to percentage
-                "top_track": None,  # TODO: You can add top track per mood here
-                "recommended_tracks": []  # TODO: You can add recommendations here
+                "top_track": None,
+                "recommended_tracks": []
             }
+
+            # Add top track if available
+            tracks = mood_to_tracks.get(mood, [])
+            if tracks:
+                top_track = tracks[0]  # Get the highest ranked track for this mood
+                mood_data[mood_key]["top_track"] = {
+                    "name": top_track.name,
+                    "artist": top_track.artist,
+                    "image": top_track.album_image_url
+                }
+
+                # Add recommendations (up to 3 tracks)
+                for i, track in enumerate(tracks[1:4]):  # Skip the top track
+                    mood_data[mood_key]["recommended_tracks"].append({
+                        "name": track.name,
+                        "artist": track.artist,
+                        "image": track.album_image_url
+                    })
 
         # Generate or fetch personality data
         personality_data = {
-            "mbti": "INTJ",
+            "mbti": "INTJ",  # This could be determined based on audio features
             "summary": "Strategic, independent, and insightful. You're a deep thinker who appreciates complex musical compositions and meaningful lyrics.",
-            "related_songs": [
-                {
-                    "name": "Lateralus",
-                    "artist": "Tool",
-                    "image": "https://i.scdn.co/image/ab67616d0000b2739b2c7c8dd5136c2fa101da20"
-                },
-                # ... (rest of the personality data remains the same)
-            ]
+            "related_songs": []
         }
 
-        return render_template('visualise.html',
-                                first_name=session.get('first_name', 'User'),
-                                time_range=time_range,
-                                mood_data=mood_data,
-                               personality=personality_data)
+        # Add related songs to personality if available
+        if user_tracks:
+            for i, track in enumerate(user_tracks[:3]):  # Take first 3 tracks
+                personality_data["related_songs"].append({
+                    "name": track.name,
+                    "artist": track.artist,
+                    "image": track.album_image_url
+                })
+
+        return render_template(
+            'visualise.html',
+            first_name=user.first_name or user.display_name.split()[0] if user.display_name else 'User',
+            time_range=time_range,
+            mood_data=mood_data,
+            personality=personality_data,
+            is_friend_view=False
+        )
 
     # route to link spotify account
     @app.route('/link/spotify')
@@ -830,7 +898,7 @@ def create_app(config_name='development'):
 
     @app.route('/friends/<friend_id>/visualise')
     def friend_visualise(friend_id):
-        """View a friend's visualisation data"""
+        """View a friend's visualisation data with time range selection."""
         if 'user_id' not in session:
             flash('Please log in first.', 'warning')
             return redirect(url_for('login'))
@@ -838,10 +906,19 @@ def create_app(config_name='development'):
         user_id = session['user_id']
 
         # Check if friends with sharing enabled
-        friendship1 = Friend.query.filter_by(user_id=user_id, friend_id=friend_id, status='accepted',
-                                             share_data=True).first()
-        friendship2 = Friend.query.filter_by(user_id=friend_id, friend_id=user_id, status='accepted',
-                                             share_data=True).first()
+        friendship1 = Friend.query.filter_by(
+            user_id=user_id,
+            friend_id=friend_id,
+            status='accepted',
+            share_data=True
+        ).first()
+
+        friendship2 = Friend.query.filter_by(
+            user_id=friend_id,
+            friend_id=user_id,
+            status='accepted',
+            share_data=True
+        ).first()
 
         if not friendship1 and not friendship2:
             flash('You do not have permission to view this data.', 'warning')
@@ -855,48 +932,104 @@ def create_app(config_name='development'):
         # Get time range from query parameters (default to medium_term)
         time_range = request.args.get('time_range', 'medium_term')
 
-        # Get friend's mood data - similar logic as in the visualise route
-        # Fetch all mood labels for this friend from the AudioFeatures table
-        all_features = AudioFeatures.query.join(Track, AudioFeatures.track_id == Track.id).filter(
-            Track.user_id == friend_id
+        # Get tracks for the friend for the selected time range
+        friend_tracks = Track.query.filter_by(
+            user_id=friend_id,
+            time_range=time_range
+        ).order_by(Track.rank).all()
+
+        # Get audio features for these tracks
+        track_ids = [track.id for track in friend_tracks]
+        audio_features = AudioFeatures.query.filter(
+            AudioFeatures.track_id.in_(track_ids)
         ).all()
 
+        # Map features to tracks for easy access
+        features_map = {feature.track_id: feature for feature in audio_features}
+
         # Count how many times each mood appears
-        from collections import Counter
-        mood_counts = Counter(f.mood for f in all_features)
+        mood_counts = Counter()
+        for feature in audio_features:
+            if feature.mood:
+                mood_counts[feature.mood] += 1
+
         total = sum(mood_counts.values()) or 1  # avoid division by zero
 
-        # Build mood_data with percentage breakdown
+        # Group tracks by mood
+        mood_to_tracks = {}
+        for track in friend_tracks:
+            features = features_map.get(track.id)
+            if features and features.mood:
+                if features.mood not in mood_to_tracks:
+                    mood_to_tracks[features.mood] = []
+                mood_to_tracks[features.mood].append(track)
+
+        # Build mood_data with percentage breakdown and top tracks
         mood_data = {}
         for mood, count in mood_counts.items():
-            # Skip if mood is None
-            if not mood:
-                continue
-
-            mood_data[mood.lower()] = {
+            # Convert mood to lowercase for template consistency
+            mood_key = mood.lower()
+            mood_data[mood_key] = {
                 "percentage": round(100 * count / total),  # Convert to percentage
-                "top_track": None,  # You can populate this if you have the data
-                "recommended_tracks": []  # You can populate this if you have the data
+                "top_track": None,
+                "recommended_tracks": []
             }
 
-        # Generate or fetch personality data
+            # Add top track if available
+            tracks = mood_to_tracks.get(mood, [])
+            if tracks:
+                top_track = tracks[0]  # Get the highest ranked track for this mood
+                mood_data[mood_key]["top_track"] = {
+                    "name": top_track.name,
+                    "artist": top_track.artist,
+                    "image": top_track.album_image_url
+                }
+
+                # Add recommendations (up to 3 tracks)
+                for i, track in enumerate(tracks[1:4]):  # Skip the top track
+                    mood_data[mood_key]["recommended_tracks"].append({
+                        "name": track.name,
+                        "artist": track.artist,
+                        "image": track.album_image_url
+                    })
+
+        # If no data, provide default
+        if not mood_data:
+            mood_data = {
+                "happy": {"percentage": 40, "top_track": None, "recommended_tracks": []},
+                "sad": {"percentage": 20, "top_track": None, "recommended_tracks": []},
+                "chill": {"percentage": 25, "top_track": None, "recommended_tracks": []},
+                "focused": {"percentage": 15, "top_track": None, "recommended_tracks": []}
+            }
+
+        # Generate personality data based on friend's tracks
         personality_data = {
-            "mbti": "INTJ",  # This should be fetched from the database if available
+            "mbti": "INTJ",  # This could be dynamically determined
             "summary": "Strategic, independent, and insightful.",
-            "related_songs": []  # You can populate this if you have the data
+            "related_songs": []
         }
 
-        # Pass friend's name to the template
-        friend_name = friend.display_name or f"{friend.first_name} {friend.last_name}".strip()
+        # Add related songs to personality if available
+        if friend_tracks:
+            for i, track in enumerate(friend_tracks[:3]):  # Take first 3 tracks
+                personality_data["related_songs"].append({
+                    "name": track.name,
+                    "artist": track.artist,
+                    "image": track.album_image_url
+                })
 
-        return render_template('visualise.html',
-                               first_name=friend_name,
-                               time_range=time_range,
-                               mood_data=mood_data,
-                               personality=personality_data,
-                               is_friend_view=True,
-                               friend_id=friend_id)
+        # Get friend's name
+        friend_name = friend.first_name or friend.display_name.split()[0] if friend.display_name else 'Friend'
 
+        return render_template(
+            'visualise.html',
+            first_name=friend_name,
+            time_range=time_range,
+            mood_data=mood_data,
+            personality=personality_data,
+            is_friend_view=True,
+            friend_id=friend_id
+        )
     # ----------------------------------------------------------
     # API Endpoint for Mood Data (AJAX)
     # ----------------------------------------------------------
@@ -920,6 +1053,16 @@ def create_app(config_name='development'):
     # Fetch and Store User's Spotify Data
     # ----------------------------------------------------------
     def fetch_and_store_user_data(user_id, spotify_api):
+        """
+        Fetch and store user's top tracks and audio features with mood analysis.
+
+        Args:
+            user_id: The user's ID
+            spotify_api: Instance of SpotifyAPI
+
+        Returns:
+            dict: Mapping of moods to their counts
+        """
         user = User.query.get(user_id)
 
         if not user or not user.access_token:
@@ -938,25 +1081,24 @@ def create_app(config_name='development'):
         for time_range in time_ranges:
             # Fetch top tracks for this time range
             tracks_data = spotify_api.get_top_tracks(user.access_token, time_range)
-            print("Tracks data", tracks_data)
+            print(f"[DEBUG] Fetched {len(tracks_data.get('items', []))} tracks for {time_range}")
 
-            if not tracks_data:
-                print("DEBUG: ERROR NO TRACK DATA")
+            if not tracks_data or 'items' not in tracks_data:
+                print(f"[DEBUG] No track data for {time_range}")
                 continue
 
             # Store track information
             track_ids = []
             artist_ids = []
 
-
             for i, item in enumerate(tracks_data['items']):
-                
                 existing_track = Track.query.filter_by(
                     id=item['id'],
                     user_id=user.id,
                     time_range=time_range
                 ).first()
 
+                # Extract artist ID for genre fetching
                 artist_id = item['artists'][0]['id']
                 artist_ids.append(artist_id)
 
@@ -984,43 +1126,71 @@ def create_app(config_name='development'):
 
             db.session.commit()
 
-            # Fetch audio features in batches
+            # Fetch audio features for the tracks
             fetch_audio_features(track_ids, user.access_token)
 
-            # After storing tracks and features, fetch artist genres
-            genre_map = spotify_api.get_artists_genres(user.access_token, artist_ids)
+            # Now we need to get artist genres
+            # Check if the get_artists_genres method exists in SpotifyAPI
+            if hasattr(spotify_api, 'get_artists_genres'):
+                try:
+                    # Fetch genres for all artists
+                    genre_map = spotify_api.get_artists_genres(user.access_token, artist_ids)
+                    print(f"[DEBUG] Fetched genres for {len(genre_map)} artists")
 
-            print(f"[DEBUG] artist_ids: {artist_ids}")
-            print(f"[DEBUG] genre_map: {genre_map}")
+                    # Map genres to moods
+                    GENRE_TO_MOOD = {
+                        'pop': 'Happy',
+                        'dance': 'Happy',
+                        'dance pop': 'Happy',
+                        'edm': 'Happy',
+                        'sad': 'Sad',
+                        'indie': 'Sad',
+                        'emo': 'Sad',
+                        'chill': 'Chill',
+                        'ambient': 'Chill',
+                        'metal': 'Angry',
+                        'rock': 'Angry',
+                        'rap': 'Focused',
+                        'classical': 'Focused',
+                        'hip hop': 'Focused',
+                        'electronica': 'Focused',
+                        'trap': 'Angry'
+                    }
 
-            GENRE_TO_MOOD = {
-                'pop': 'Happy',
-                'dance pop': 'Happy',
-                'sad indie': 'Sad',
-                'emo': 'Sad',
-                'chillwave': 'Chill',
-                'ambient': 'Chill',
-                'metal': 'Angry',
-                'rap': 'Focused',
-                'classical': 'Focused',
-                'hip hop': 'Focused',
-                'rock': 'Happy',
-                'trap': 'Angry'
-            }
+                    # Count moods based on genres
+                    for artist_id in artist_ids:
+                        genres = genre_map.get(artist_id, [])
+                        matched = False
+                        for genre in genres:
+                            for key in GENRE_TO_MOOD:
+                                if key in genre.lower():
+                                    mood = GENRE_TO_MOOD[key]
+                                    mood_counts[mood] += 1
+                                    matched = True
+                                    break
+                            if matched:
+                                break
 
-            for artist_id in artist_ids:
-                genres = genre_map.get(artist_id, [])
-                matched = False
-                for genre in genres:
-                    for key in GENRE_TO_MOOD:
-                        if key in genre:
-                            mood = GENRE_TO_MOOD[key]
-                            mood_counts[mood] += 1
-                            matched = True
-                            break
-                    if matched:
-                        break
+                        # If no genre match, use audio features for mood determination
+                        if not matched:
+                            # Find a track by this artist
+                            for track_id in track_ids:
+                                track = Track.query.get(track_id)
+                                if track and artist_id in track.artist:
+                                    audio_feature = AudioFeatures.query.filter_by(track_id=track_id).first()
+                                    if audio_feature and audio_feature.mood:
+                                        mood_counts[audio_feature.mood] += 1
+                                        break
+                except Exception as e:
+                    print(f"[ERROR] Failed to process genres: {e}")
+            else:
+                # If get_artists_genres method doesn't exist, use audio features alone
+                for track_id in track_ids:
+                    audio_feature = AudioFeatures.query.filter_by(track_id=track_id).first()
+                    if audio_feature and audio_feature.mood:
+                        mood_counts[audio_feature.mood] += 1
 
+        # Return the mood counts dictionary
         return dict(mood_counts)
 
     # ----------------------------------------------------------

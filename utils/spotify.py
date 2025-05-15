@@ -147,17 +147,6 @@ class SpotifyAPI:
             return None
 
     def get_top_tracks(self, access_token, time_range='medium_term', limit=50):
-        """
-        Get user's top tracks from Spotify.
-
-        Args:
-            access_token: Valid access token
-            time_range: Time range (short_term, medium_term, or long_term)
-            limit: Number of tracks to return (maximum 50)
-
-        Returns:
-            User's top tracks information
-        """
         headers = {
             'Authorization': f'Bearer {access_token}'
         }
@@ -167,15 +156,21 @@ class SpotifyAPI:
             'limit': limit
         }
 
-        response = requests.get(
-            f"{self.api_base_url}me/top/tracks",
-            headers=headers,
-            params=params
-        )
+        url = f"{self.api_base_url}me/top/tracks"
+        print(f"[DEBUG] Making request to: {url}")
+        print(f"[DEBUG] Headers: {headers}")
+        print(f"[DEBUG] Params: {params}")
+
+        response = requests.get(url, headers=headers, params=params)
+
+        print(f"[DEBUG] Response status code: {response.status_code}")
 
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            print(f"[DEBUG] Number of tracks returned: {len(data.get('items', []))}")
+            return data
         else:
+            print(f"[DEBUG] Error response: {response.text}")
             return None
         
     def get_audio_features(self, access_token, track_ids):
@@ -215,6 +210,48 @@ class SpotifyAPI:
                 print("Failed to fetch audio features:", response.text)
 
         return features_map
+
+    def get_artists_genres(self, access_token, artist_ids):
+        """
+        Retrieve genres for a list of artist IDs.
+
+        Args:
+            access_token (str): Valid Spotify access token.
+            artist_ids (list): List of Spotify artist IDs.
+
+        Returns:
+            dict: Mapping of artist ID to list of genres.
+        """
+        headers = {
+            'Authorization': f'Bearer {access_token}'
+        }
+
+        genres_map = {}
+
+        # Spotify allows up to 50 artist IDs per request
+        for i in range(0, len(artist_ids), 50):
+            batch = artist_ids[i:i + 50]
+            ids_param = ",".join(batch)
+
+            try:
+                response = requests.get(
+                    f"{self.api_base_url}artists",
+                    headers=headers,
+                    params={'ids': ids_param}
+                )
+
+                if response.status_code == 200:
+                    data = response.json().get('artists', [])
+                    for artist in data:
+                        if artist:
+                            genres_map[artist['id']] = artist.get('genres', [])
+                else:
+                    print(f"Failed to fetch artist genres: {response.text}")
+            except Exception as e:
+                print(f"Exception in get_artists_genres: {str(e)}")
+
+        return genres_map
+
 
     @staticmethod
     def analyze_mood_from_features(features):
