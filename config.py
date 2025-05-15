@@ -21,11 +21,16 @@ class Config:
     API_BASE_URL = 'https://api.spotify.com/v1/'
     USING_NGROK = True # set to false in prod
 
+    # database stuff
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///app.db')  # SQLite database for development, actual for prod
+    if SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://', 1)
+
+
 
 # Development environment configuration
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///app.db'  # SQLite database for development
     SECRET_KEY = os.environ.get('dev_secret_key')
     WTF_CSRF_SECRET_KEY = SECRET_KEY
 
