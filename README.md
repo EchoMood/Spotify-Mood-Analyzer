@@ -332,8 +332,9 @@ Built with ❤️ using:
 
 ## 🧪 Testing
 
-We implemented unit tests using pytest to verify the following:
+We implemented both unit and system (Selenium) tests to verify key functionalities of the EchoMood application.
 
+### Unit Tests (`tests/test_unit.py`)
 - User registration flow and database persistence
 - Admin inspection of registered users
 - Spotify OAuth redirection
@@ -341,3 +342,17 @@ We implemented unit tests using pytest to verify the following:
 - Friend request acceptance and status update
 
 All tests are self-contained and run on an in-memory test database. They simulate form submissions and validate both frontend behavior (redirects) and backend logic (data updates).
+
+### Selenium Tests (`tests/selenium/`)
+These tests simulate real user actions in the browser:
+
+- `test_homepage_button.py`: Ensure "Get Started" button on homepage works
+- `test_login_flow.py`: Log in with test account and load dashboard
+- `test_friend_search.py`: Search for other users by name/email
+- `test_send_friend_request.py`: Send friend request from `test` to `test2`
+- `test_spotify_connect.py`: Click "Connect Spotify" and check redirect
+
+To run all Selenium tests:
+
+```bash
+python -m unittest discover -s tests/selenium
