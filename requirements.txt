@@ -16,3 +16,4 @@ psycopg2==2.9.10
 pytest
 selenium
 pytest-selenium
+chromedriver-autoinstaller
