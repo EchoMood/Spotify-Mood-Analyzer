@@ -346,7 +346,7 @@ All tests are self-contained and run on an in-memory test database. They simulat
 To run all unit tests:
 
 ```bash
-python -m unittest tests/test_unit.py
+pytest tests/test_unit.py
 
 ### Selenium Tests (`tests/selenium/`)
 These tests simulate real user actions in the browser:
