@@ -11,3 +11,8 @@ requests
 python-dotenv
 flask-migrate
 psycopg2==2.9.10
+
+# testing
+pytest
+selenium
+pytest-selenium
