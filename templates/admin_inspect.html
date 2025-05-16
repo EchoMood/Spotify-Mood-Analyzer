@@ -13,6 +13,10 @@
         h1, h2 {
             color: #333;
         }
+        h3:target {
+            background-color: #e0f7fa;
+            transition: background-color 0.3s ease-in-out;
+        }
         .section {
             background-color: white;
             padding: 20px;
@@ -131,7 +135,7 @@
             <tbody>
                 {% for user in users %}
                 <tr>
-                    <td>{{ user.id }}</td>
+                    <td><a href="#tracks-{{ user.id }}">{{ user.id }}</a></td>
                     <td>{{ user.display_name or user.first_name + " " + (user.last_name or "") }}</td>
                     <td>{{ user.email }}</td>
                     <td>{{ user.registration_method }}</td>
@@ -150,7 +154,7 @@
     {% if tracks_by_user %}
         {% for user_id, data in tracks_by_user.items() %}
             <div class="user-tracks">
-                <h3>{{ data.user_name }}</h3>
+                <h3 id="tracks-{{ user_id }}">{{ data.user_name }}</h3>
                 <table>
                     <thead>
                         <tr>
