@@ -347,25 +347,6 @@ You should now see the Spotify Mood Analyzer web interface!
 
 - Ensure you are using Python version 3.8 or higher.
 
----
-
-## 📜 License
-
-This project is licensed for personal and educational use.  
-For commercial use, please contact the owner.
-
----
-
-## 👌 Acknowledgements
-
-Built with ❤️ using:
-- [Flask](https://flask.palletsprojects.com/)
-- [Spotify API](https://developer.spotify.com/documentation/web-api/)
-- [OpenAI GPT-4 + DALL·E](https://platform.openai.com/)
-- [ngrok](https://ngrok.com)
-
----
-
 ## 🧪 Testing
 
 We implemented both unit and system (Selenium) tests to verify key functionalities of the EchoMood application.
@@ -397,3 +378,23 @@ To run all Selenium tests:
 
 ```bash
 python -m unittest discover -s tests/selenium
+
+
+---
+
+## 📜 License
+
+This project is licensed for personal and educational use.  
+For commercial use, please contact the owner.
+
+---
+
+## 👌 Acknowledgements
+
+Built with ❤️ using:
+- [Flask](https://flask.palletsprojects.com/)
+- [Spotify API](https://developer.spotify.com/documentation/web-api/)
+- [OpenAI GPT-4 + DALL·E](https://platform.openai.com/)
+- [ngrok](https://ngrok.com)
+
+---
