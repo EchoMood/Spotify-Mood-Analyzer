@@ -217,3 +217,157 @@ class ChatGPT:
         except Exception as e:
             print(f"[ERROR] Mood recommendation failed: {e}")
             return {}
+        
+    def infer_mbti_type(self, tracks):
+        """
+        Infers the MBTI (Myers-Briggs Type Indicator) personality type based on a user's music listening history.
+
+        This method uses the OpenAI ChatGPT model to analyze the user's track-level data, including
+        song name, artist, genre, and mood, and returns the inferred MBTI type.
+
+        Parameters:
+            tracks (list of dict): A list of dictionaries where each dictionary represents a track and includes:
+                - name (str): Track name
+                - artist (str): Artist name
+                - album (str): Album name
+                - genre (str): Genre label
+                - mood (str): Mood label
+
+        Returns:
+            str: The inferred MBTI type (e.g., "INFP", "ENTJ", etc.). Falls back to "INTJ" on failure.
+        """
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a music personality analyst. Based on a list of songs with artist, genre, and mood, "
+                    "infer only the MBTI personality type of the user. Do not explain or provide anything else."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Here is the user's listening data:\n{tracks}\n\nWhat is their MBTI type?"
+            }
+        ]
+
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            response = requests.post(self.api_url, headers=headers, json=data)
+            if response.ok:
+                result = response.json()["choices"][0]["message"]["content"].strip()
+                return result if result else "INTJ"
+        except Exception as e:
+            print(f"[GPT ERROR] MBTI type inference failed: {e}")
+
+        return "INTJ"  # default fallback
+    
+    
+    def infer_mbti_summary(self, tracks):
+        """
+        Infers a very concise one-line MBTI-based music personality summary 
+        (max 5 words) based on the user's music listening data.
+
+        Parameters:
+            tracks (list): A list of track dictionaries with name, artist, genre, and mood.
+
+        Returns:
+            str: A single short summary string (e.g., "Calm and introspective listener")
+        """
+        # Define prompt with strict length requirement
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a music psychologist. Given a list of songs with metadata, "
+                    "summarize the user's musical personality in a maximum of **5 words only**. "
+                    "Avoid punctuation or extra explanation. Respond only with the summary."
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Here is the user's music data:\n{tracks}\n\n"
+                    "Please give a 5-word (or fewer) summary of their music personality."
+                )
+            }
+        ]
+
+        # Request payload
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.6
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            response = requests.post(self.api_url, headers=headers, json=data)
+            if response.ok:
+                return response.json()["choices"][0]["message"]["content"].strip()
+            raise RuntimeError(f"GPT MBTI summary failed: {response.status_code}, {response.text}")
+        except Exception as e:
+            print(f"[GPT ERROR] MBTI summary failed: {e}")
+            return "Calm and introspective listener"
+            
+
+    def generate_personality_image_url(self, mbti, mood):
+        """
+        Generates an AI-powered image representing the user's personality, based on MBTI type and mood.
+
+        Parameters:
+            mbti (str): MBTI personality type (e.g., ENTP, ISFP).
+            mood (str): Dominant mood inferred from the user's music history.
+
+        Returns:
+            str: URL to the DALL·E-generated image, or None if generation failed.
+        """
+
+        # Prompt DALL·E to create a fantasy portrait inspired by MBTI and emotional tone
+        prompt = (
+            f"A digital fantasy portrait of a person with MBTI type {mbti}, "
+            f"visually inspired by the emotional tone of '{mood}' mood. "
+            f"Portrait style, soft lighting, centered composition, aesthetic symbolism."
+        )
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        # Call DALL·E 3 image generation endpoint
+        try:
+            response = requests.post(
+                "https://api.openai.com/v1/images/generations",
+                headers=headers,
+                json={
+                    "model": "dall-e-3",
+                    "prompt": prompt,
+                    "n": 1,
+                    "size": "1024x1024"
+                }
+            )
+
+            if response.ok:
+                # Return the URL of the generated image
+                return response.json()["data"][0]["url"]
+
+            # Raise exception if image generation failed
+            raise RuntimeError(f"DALL-E API error {response.status_code}: {response.text}")
+
+        except Exception as e:
+            print(f"[DALL·E ERROR] Image generation failed: {e}")
+            return None

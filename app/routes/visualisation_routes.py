@@ -61,19 +61,6 @@ def visualise():
             "recommended_tracks": []  # will be filled using session below
         }
 
-    # Simple fallback personality data (you can update this dynamically later)
-    personality_data = {
-        "mbti": "INTJ",
-        "summary": "Strategic, independent, and insightful. You're a deep thinker who appreciates complex musical compositions and meaningful lyrics.",
-        "related_songs": [
-            {
-                "name": "Lateralus",
-                "artist": "Tool",
-                "image": "https://i.scdn.co/image/ab67616d0000b2739b2c7c8dd5136c2fa101da20"
-            }
-        ]
-    }
-
     # Load GPT-recommended songs
     recommended_songs = session.get('recommended_tracks_by_mood', {})
     for mood in mood_data:
@@ -81,6 +68,25 @@ def visualise():
 
     # Mood/personality summary
     mood_summary = session.get('mood_summary', 'We couldn’t generate your mood summary at this time.')
+    
+    # Get top 6 tracks based on popularity (and then rank)
+    top_6_tracks = sorted(tracks, key=lambda x: (-x.popularity, x.rank or 9999))[:6]
+    related_songs = [
+        {
+            "name": t.name,
+            "artist": t.artist,
+            "image": t.album_image_url or url_for('static', filename='images/sample-album.jpg')
+        }
+        for t in top_6_tracks
+    ]
+
+    # Pull MBTI and summary directly from session
+    personality_data = {
+        "mbti": session.get("mbti_type", "INTJ"),
+        "summary": session.get("mbti_summary", "..."),
+        "image": session.get("personality_image_url", url_for('static', filename='images/virtual-pet.png')),
+        "related_songs": related_songs
+    }
 
     return render_template(
         'visualise.html',
