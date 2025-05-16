@@ -1,52 +1,82 @@
+<!-- complete_account.html – Styled like signup_cred.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <title>Complete Your Account – EchoMood</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complete Your Account - Spotify Mood Analysis</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <meta name="description" content="Complete your EchoMood account with a secure password.">
+    <meta name="keywords" content="EchoMood, Complete Account, Password">
+    <meta name="author" content="EchoMood Team">
+
+    <!-- Shared dark-themed styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 </head>
+
 <body>
+    <!-- Background mood tile animation -->
     <div class="container">
-        <header>
-            <h1>Complete Your Account</h1>
-        </header>
-
-        <section class="form-container">
-            <p>Hi {{ user.first_name or user.display_name }}! Please set a password to complete your account setup.</p>
-
-            <form method="POST">
-                {{ form.csrf_token }}
-
-                <div class="form-group">
-                    {{ form.password.label }}
-                    {{ form.password(class="form-control") }}
-                    {% if form.password.errors %}
-                        <div class="error">
-                            {% for error in form.password.errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    {{ form.confirm_password.label }}
-                    {{ form.confirm_password(class="form-control") }}
-                    {% if form.confirm_password.errors %}
-                        <div class="error">
-                            {% for error in form.confirm_password.errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    {{ form.submit(class="btn") }}
-                </div>
-            </form>
-        </section>
+        <div class="box" style="--clr: var(--happy-color);"></div>
+        <div class="box" style="--clr: var(--sad-color);"></div>
+        <div class="box" style="--clr: var(--excited-color);"></div>
+        <div class="box" style="--clr: var(--motivated-color);"></div>
+        <div class="box" style="--clr: var(--chill-color);"></div>
+        <div class="box" style="--clr: var(--angry-color);"></div>
+        <div class="box" style="--clr: var(--happy-color);"></div>
+        <div class="box" style="--clr: var(--sad-color);"></div>
+        <div class="box" style="--clr: var(--excited-color);"></div>
+        <div class="box" style="--clr: var(--motivated-color);"></div>
+        <div class="box" style="--clr: var(--chill-color);"></div>
+        <div class="box" style="--clr: var(--angry-color);"></div>
+        <div class="box" style="--clr: var(--happy-color);"></div>
+        <div class="box" style="--clr: var(--sad-color);"></div>
+        <div class="box" style="--clr: var(--excited-color);"></div>
+        <div class="box" style="--clr: var(--angry-color);"></div>
+        <div class="box" style="--clr: var(--chill-color);"></div>
+        <div class="box" style="--clr: var(--motivated-color);"></div>
     </div>
+
+    <!-- Main account completion form -->
+    <div class="login">
+        <h2>Complete Your Account</h2>
+        <p class="welcome-text">Hi {{ user.first_name or user.display_name }}! Please set your password to finish
+            setting up your account.</p>
+
+        <form method="POST">
+            {{ form.csrf_token }}
+
+            <!-- Password Input Field -->
+            <div class="inputBox">
+                {{ form.password(class="authentication", placeholder=" ") }}
+                <span>Password</span>
+            </div>
+            {% if form.password.errors %}
+            <div class="flash-message error">
+                {% for error in form.password.errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Confirm Password Input Field -->
+            <div class="inputBox">
+                {{ form.confirm_password(class="authentication", placeholder=" ") }}
+                <span>Confirm Password</span>
+            </div>
+            {% if form.confirm_password.errors %}
+            <div class="flash-message error">
+                {% for error in form.confirm_password.errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Submit Button -->
+            <div class="inputBox">
+                {{ form.submit(class="authentication", value="Set Password") }}
+            </div>
+        </form>
+    </div>
+
+    <!-- Background animation script -->
+    <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
 </body>
+
 </html>
