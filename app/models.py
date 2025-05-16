@@ -7,6 +7,8 @@ db = SQLAlchemy()
 
 # Combined user model
 class User(db.Model):
+    __tablename__ = 'user'
+
     # Primary key from Spotify model (Spotify user ID)
     id = db.Column(db.String(50), primary_key=True)
 

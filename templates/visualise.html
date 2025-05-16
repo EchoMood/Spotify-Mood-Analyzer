@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/visualise.css') }}">
     <!-- Link to external JS file -->
     <script src="{{ url_for('static', filename='js/visualise.js') }}"></script>
-
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -100,6 +100,14 @@
         </div>
     </section>
 
+        <!-- Genre Chart Section -->
+    <section class="genre-chart-container">
+        <h2 class="section-title">Genre Breakdown</h2>
+        <div class="chart-wrapper">
+            <canvas id="genreChart"></canvas>
+        </div>
+    </section>
+
     <!-- Personality Card Section -->
     <section class="personality-card">
         <h2 class="section-title">Your Personality</h2>
@@ -140,6 +148,99 @@
         </div>
         <button class="share-button">Share This Card</button>
     </section>
+    <script>
+        // Genre data from backend
+        const genreData = {{ genre_data|tojson|safe }};
+    </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only initialize chart if genre data exists
+            if (typeof genreData !== 'undefined' && Object.keys(genreData).length > 0) {
+                const ctx = document.getElementById('genreChart').getContext('2d');
+                initGenreChart(ctx, genreData);
+            }
+        });
+
+        // Genre chart initialization function
+        function initGenreChart(ctx, data) {
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+
+            // Generate unique colors for each genre
+            const colors = generateChartColors(labels.length);
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: colors.map(color => color.replace('0.7', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                font: {
+                                    size: 12
+                                },
+                                padding: 15
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Your Genre Distribution',
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                bottom: 20
+                            }
+                        }
+                    },
+                    cutout: '65%',
+                    radius: '90%'
+                }
+            });
+        }
+
+        // Function to generate vibrant colors for chart segments
+        function generateChartColors(count) {
+            // Predefined colors that match your mood theme
+            const baseColors = [
+                'rgba(255, 99, 132, 0.7)',  // Pink (Happy)
+                'rgba(75, 192, 192, 0.7)',   // Teal (Chill)
+                'rgba(153, 102, 255, 0.7)',  // Purple (Excited)
+                'rgba(54, 162, 235, 0.7)',   // Blue (Sad)
+                'rgba(255, 159, 64, 0.7)',   // Orange (Motivated)
+                'rgba(255, 99, 71, 0.7)',    // Tomato (Angry)
+                'rgba(50, 205, 50, 0.7)',    // Lime Green
+                'rgba(255, 215, 0, 0.7)'     // Gold
+            ];
+
+            // If we need more colors than in our base set
+            if (count > baseColors.length) {
+                // Generate additional random colors
+                for (let i = baseColors.length; i < count; i++) {
+                    const r = Math.floor(Math.random() * 255);
+                    const g = Math.floor(Math.random() * 255);
+                    const b = Math.floor(Math.random() * 255);
+                    baseColors.push(`rgba(${r}, ${g}, ${b}, 0.7)`);
+                }
+            }
+
+            return baseColors.slice(0, count);
+        }
+    </script>
 </body>
 </html>

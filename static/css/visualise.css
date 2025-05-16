@@ -370,3 +370,29 @@ body {
     background: rgba(255, 255, 255, 0.1);
     color: white;
 }
+
+/* Genre Chart Container */
+.genre-chart-container {
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 16px;
+    margin: 30px auto;
+    padding: 20px;
+    max-width: 900px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.chart-wrapper {
+    height: 400px;
+    position: relative;
+    margin: 0 auto;
+    padding: 10px;
+}
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+    .chart-wrapper {
+        height: 300px;
+    }
+}

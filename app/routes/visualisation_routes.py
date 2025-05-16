@@ -45,6 +45,20 @@ def visualise():
         if track.mood:
             grouped_tracks[track.mood.lower()].append(track)
 
+        # Aggregate genre data
+        genre_counts = Counter()
+        for track in tracks:
+            if track.genre and track.genre != "Unknown":
+                genre_counts[track.genre] += 1
+
+        # Get top genres (limit to top 8 for chart readability)
+        top_genres = dict(genre_counts.most_common(8))
+
+        # If there are other genres beyond the top 8, group them as "Other"
+        if len(genre_counts) > 8:
+            other_count = sum(count for genre, count in genre_counts.most_common()[8:])
+            if other_count > 0:
+                top_genres["Other"] = other_count
 
     # Build mood data dictionary
     mood_data = {}
