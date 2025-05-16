@@ -375,6 +375,7 @@ To run all unit tests:
 
 ```bash
 pytest tests/test_unit.py
+```
 
 ### Selenium Tests (`tests/selenium/`)
 These tests simulate real user actions in the browser:
@@ -389,6 +390,7 @@ To run all Selenium tests:
 
 ```bash
 python -m unittest discover -s tests/selenium
+```
 
 
 ---
