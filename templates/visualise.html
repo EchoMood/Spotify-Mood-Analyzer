@@ -46,17 +46,36 @@
 
             {% for mood, count in mood_counts.items() %}
             <div class="mood-card">
-                <div class="emoji">🎵</div> <!-- You can map emojis later -->
+                <div class="emoji">
+                    {% if mood.lower() == 'happy' %}
+                    😊
+                    {% elif mood.lower() == 'sad' %}
+                    😢
+                    {% elif mood.lower() == 'chill' %}
+                    🧘‍♂️
+                    {% elif mood.lower() == 'angry' %}
+                    😡
+                    {% elif mood.lower() == 'focused' %}
+                    🎯
+                    {% elif mood.lower() == 'energetic' %}
+                    ⚡
+                    {% elif mood.lower() == 'nostalgic' %}
+                    🕰️
+                    {% else %}
+                    🎵
+                    {% endif %}          
+                </div>
                 <h3>{{ mood }}</h3>
                 <p>{{ count }} track{{ 's' if count > 1 else '' }}</p>
-            
-                <!-- Top song (optional, add logic if needed) -->
+                <h4>Top Song</h4>
+
                 <div class="top-song">
-                    <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
+                    {% set top = mood_data[mood.lower()].top_track %}
+                    <img src="{{ top.image }}" alt="Album cover" class="album-cover">
                     <div class="song-info">
-                        <p class="song-title">Top Song</p>
-                        <p class="song-artist">Top Artist</p>
-                    </div>
+                        <p class="song-title">{{ top.name }}</p>
+                        <p class="song-artist">{{ top.artist }}</p>
+                    </div>          
                 </div>
             
                 <p class="time-of-day">Usually felt at: Night (8pm-11pm)</p>

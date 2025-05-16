@@ -1,7 +1,7 @@
 # app/routes/visualisation_routes.py
 
 from flask import Blueprint, render_template, session, redirect, url_for, request, flash, jsonify
-from collections import Counter
+from collections import Counter, defaultdict
 
 from app.models import User, Track, AudioFeatures
 
@@ -32,16 +32,34 @@ def visualise():
     print("🔍 mood_counts:", mood_counts)
 
     total = sum(mood_counts.values()) or 1  # avoid division by zero
+    
+    # Fetch user's tracks from DB
+    tracks = Track.query.filter_by(user_id=user_id, time_range=time_range).all()
 
-    # Create mood breakdown structure for rendering mood cards
-    mood_data = {
-        mood.lower(): {
+    # Organize tracks by mood
+    grouped_tracks = defaultdict(list)
+    for track in tracks:
+        if track.mood:
+            grouped_tracks[track.mood.lower()].append(track)
+
+
+    # Build mood data dictionary
+    mood_data = {}
+    for mood, count in mood_counts.items():
+        mood_key = mood.lower()
+        mood_tracks = grouped_tracks.get(mood_key, [])
+        mood_tracks_sorted = sorted(mood_tracks, key=lambda x: (-x.popularity, x.rank or 9999))
+
+        top_track = mood_tracks_sorted[0] if mood_tracks_sorted else None
+        mood_data[mood_key] = {
             "percentage": round(100 * count / total),
-            "top_track": None,             # Future enhancement: fetch top track by mood
-            "recommended_tracks": []       # Future enhancement: fetch recs by mood
+            "top_track": {
+                "name": top_track.name if top_track else "Top Song",
+                "artist": top_track.artist if top_track else "Top Artist",
+                "image": top_track.album_image_url or url_for('static', filename='images/sample-album.jpg') if top_track else url_for('static', filename='images/sample-album.jpg')
+            } if top_track else None,
+            "recommended_tracks": []  # will be filled using session below
         }
-        for mood, count in mood_counts.items()
-    }
 
     # Simple fallback personality data (you can update this dynamically later)
     personality_data = {
@@ -56,11 +74,13 @@ def visualise():
         ]
     }
 
-    # ChatGPT-generated mood & personality summary
-    mood_summary = session.get('mood_summary', 'We couldn’t generate your mood summary at this time.')
-
-    # Recommended songs by mood (future: filled using ChatGPT or your logic)
+    # Load GPT-recommended songs
     recommended_songs = session.get('recommended_tracks_by_mood', {})
+    for mood in mood_data:
+        mood_data[mood]["recommended_tracks"] = recommended_songs.get(mood.capitalize(), [])
+
+    # Mood/personality summary
+    mood_summary = session.get('mood_summary', 'We couldn’t generate your mood summary at this time.')
 
     return render_template(
         'visualise.html',

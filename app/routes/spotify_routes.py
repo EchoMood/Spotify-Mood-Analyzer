@@ -8,7 +8,7 @@ import uuid
 from app import spotify_api
 from app import gpt
 from app.models import db, User, Track, AudioFeatures
-from app.services.spotify_ingest import refresh_token, fetch_and_store_user_data, fetch_audio_features
+from app.services.spotify_ingest import refresh_token, fetch_and_store_user_data, fetch_audio_features, enrich_recommended_tracks_with_album_art
 
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, SubmitField
@@ -147,9 +147,14 @@ def callback():
             mood_summary = gpt.analyze_user_tracks(gpt_input)
             session['mood_summary'] = mood_summary
             
-            # Generate GPT-based recommendations by mood
-            recommended_tracks_by_mood = gpt.recommend_tracks_by_mood(gpt_input)
-            session['recommended_tracks_by_mood'] = recommended_tracks_by_mood
+            # 💬 Call GPT for mood-based song recommendations
+            gpt_recs_by_mood = gpt.recommend_tracks_by_mood(mood_counts)
+
+            # 🎨 Enrich with album cover via Spotify API
+            recommended_tracks = enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api)
+
+            # 💾 Save to session for rendering
+            session['recommended_tracks_by_mood'] = recommended_tracks
 
             return redirect(url_for('visual.visualise'))
     
@@ -212,10 +217,14 @@ def callback():
                 mood_summary = gpt.analyze_user_tracks(gpt_input)
                 session['mood_summary'] = mood_summary
                 
-                # Generate GPT-based recommendations by mood
-                recommended_tracks_by_mood = gpt.recommend_tracks_by_mood(gpt_input)
-                session['recommended_tracks_by_mood'] = recommended_tracks_by_mood
+                # 💬 Call GPT for mood-based song recommendations
+                gpt_recs_by_mood = gpt.recommend_tracks_by_mood(mood_counts)
 
+                # 🎨 Enrich with album cover via Spotify API
+                recommended_tracks = enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api)
+
+                # 💾 Save to session for rendering
+                session['recommended_tracks_by_mood'] = recommended_tracks
 
                 return redirect(url_for('visual.visualise'))
                 
@@ -265,10 +274,6 @@ def callback():
 
         # Fetch tracks and audio features from DB
         tracks = Track.query.filter_by(user_id=user.id).all()
-        feature_map = {
-            f.track_id: f
-            for f in AudioFeatures.query.filter(AudioFeatures.track_id.in_([t.id for t in tracks])).all()
-        }
 
         # Prepare track data for GPT
         gpt_input = []
@@ -285,9 +290,14 @@ def callback():
         mood_summary = gpt.analyze_user_tracks(gpt_input)
         session['mood_summary'] = mood_summary
         
-        # Generate GPT-based recommendations by mood
-        recommended_tracks_by_mood = gpt.recommend_tracks_by_mood(gpt_input)
-        session['recommended_tracks_by_mood'] = recommended_tracks_by_mood
+        # 💬 Call GPT for mood-based song recommendations
+        gpt_recs_by_mood = gpt.recommend_tracks_by_mood(mood_counts)
+
+        # 🎨 Enrich with album cover via Spotify API
+        recommended_tracks = enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api)
+
+        # 💾 Save to session for rendering
+        session['recommended_tracks_by_mood'] = recommended_tracks
 
     except Exception as e:
         print("❌ Error while importing Spotify data:", str(e))

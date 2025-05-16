@@ -235,3 +235,31 @@ def fetch_audio_features(track_ids, access_token, spotify_api):
             audio_feature.mood = SpotifyAPI.analyze_mood_from_features(features)
 
     db.session.commit()
+    
+def enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api):
+    """
+    Takes GPT-generated song recommendations (dict by mood),
+    enriches them with album cover URLs using Spotify Search API.
+
+    Args:
+        gpt_recs_by_mood (dict): e.g. { "Happy": [{"name": "X", "artist": "Y"}, ...], ... }
+        access_token (str): Spotify access token for searching.
+        spotify_api (SpotifyAPI): Instance to make API calls.
+
+    Returns:
+        dict: Same structure but with album image included.
+    """
+    enriched = {}
+
+    for mood, tracks in gpt_recs_by_mood.items():
+        enriched[mood] = []
+        for track in tracks:
+            result = spotify_api.search_track(track['name'], track['artist'], access_token)
+            if result:
+                enriched[mood].append({
+                    "name": result["name"],
+                    "artist": result["artist"],
+                    "image_url": result["album"]["images"][0]["url"] if result["album"]["images"] else None
+                })
+
+    return enriched

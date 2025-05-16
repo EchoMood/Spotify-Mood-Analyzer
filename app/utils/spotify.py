@@ -276,3 +276,41 @@ class SpotifyAPI:
                 print("Failed to fetch artist genres:", response.text)
 
         return genres_map
+
+    def search_track(self, track_name, artist_name, access_token):
+        """
+        Search for a track on Spotify by name and artist, and return its metadata.
+        Useful for fetching album images for GPT-recommended songs.
+        """
+        import requests
+        import urllib.parse
+
+        query = f"track:{track_name} artist:{artist_name}"
+        encoded_query = urllib.parse.quote(query)
+
+        url = f"https://api.spotify.com/v1/search?q={encoded_query}&type=track&limit=1"
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            print(f"[SpotifyAPI] Search failed: {response.status_code} – {response.text}")
+            return None
+
+        data = response.json()
+        items = data.get("tracks", {}).get("items", [])
+        if not items:
+            return None
+
+        # Return the first matching track
+        return {
+            "name": items[0]["name"],
+            "artist": items[0]["artists"][0]["name"],
+            "album": {
+                "name": items[0]["album"]["name"],
+                "images": items[0]["album"]["images"]  # contains URLs
+            },
+            "id": items[0]["id"]
+        }
+
