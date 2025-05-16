@@ -6,6 +6,7 @@ from flask_migrate import Migrate
 
 from app.models import db
 from app.utils.spotify import SpotifyAPI
+from app.utils.chatgpt import ChatGPT
 from config import config
 
 # Initialize extensions globally

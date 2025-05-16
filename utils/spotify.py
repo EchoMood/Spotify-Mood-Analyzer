@@ -6,7 +6,7 @@ import base64
 import requests
 from urllib.parse import urlencode
 
-
+from app.models import db, User, Track, AudioFeatures
 class SpotifyAPI:
     """
     Class to handle interactions with the Spotify API.

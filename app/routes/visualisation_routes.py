@@ -3,7 +3,7 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, flash, jsonify
 from collections import Counter
 
-from app.models import User
+from app.models import User, Track, AudioFeatures
 
 visual_bp = Blueprint('visual', __name__)
 

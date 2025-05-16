@@ -58,7 +58,7 @@ class User(db.Model):
 class Track(db.Model):
     __tablename__ = 'track'
 
-    id = db.Column(db.String(50), unique=True)
+    id = db.Column(db.String(50))
     user_id = db.Column(db.String(50), db.ForeignKey('user.id'))
     time_range = db.Column(db.String(20))  # short_term, medium_term, long_term
 
