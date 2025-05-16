@@ -4,6 +4,7 @@ from collections import Counter
 from datetime import datetime
 from app.models import db, User, Track, AudioFeatures
 from app.utils.spotify import SpotifyAPI
+from app.utils.chatgpt import ChatGPT
 from sqlalchemy.exc import IntegrityError
 
 def refresh_token(user, spotify_api):
@@ -54,41 +55,58 @@ def refresh_token(user, spotify_api):
 # ----------------------------------------------------------
 # Fetch and Store User's Spotify Data
 # ----------------------------------------------------------
-def fetch_and_store_user_data(user_id, spotify_api):
+def fetch_and_store_user_data(user_id, spotify_api, gpt):
+    """
+    Fetches and stores Spotify data (tracks and audio features) for a given user,
+    enriches each track with mood and ChatGPT-derived genre information,
+    and stores it in the database.
+
+    Parameters:
+        user_id (str): Spotify user ID (same as primary key in User table).
+        spotify_api (SpotifyAPI): Instance of SpotifyAPI wrapper for making Spotify requests.
+        gpt (ChatGPT): Instance of ChatGPT class to call OpenAI API for genre classification.
+
+    Returns:
+        dict: A dictionary containing mood counts inferred from genres.
+    """
+
     user = User.query.get(user_id)
 
+    # 🔒 Validate user and access token
     if not user or not user.access_token:
         return False
 
-    # Check if token is expired and refresh if needed
+    # 🔄 Refresh token if expired
     if user.token_expiry and user.token_expiry <= datetime.utcnow():
         if not refresh_token(user, spotify_api):
             return False
 
-    # Time ranges to fetch
     time_ranges = ['short_term', 'medium_term', 'long_term']
-
     mood_counts = Counter()
 
     for time_range in time_ranges:
-        # Fetch top tracks for this time range
+        # 🎧 Get user's top tracks for each time range
         tracks_data = spotify_api.get_top_tracks(user.access_token, time_range)
-
         if not tracks_data:
             continue
 
-        # Store track information
         track_ids = []
         artist_ids = []
 
-
         for i, item in enumerate(tracks_data['items']):
-            
             track_id = item['id']
             artist_id = item['artists'][0]['id']
+            artist_name = item['artists'][0]['name']
+            track_name = item['name']
+            album_name = item['album']['name']
             artist_ids.append(artist_id)
 
+            # 🔍 Get genre from ChatGPT
+            genre = gpt.classify_genre(track_name, artist_name, album_name)
+            print(f"[GPT] Genre for '{track_name}' by {artist_name}: {genre}")
+
             try:
+                # 🛠 Update if existing track found
                 existing_track = Track.query.filter_by(
                     id=track_id,
                     user_id=user.id,
@@ -99,22 +117,25 @@ def fetch_and_store_user_data(user_id, spotify_api):
                     existing_track.rank = i + 1
                     existing_track.popularity = item['popularity']
                     existing_track.created_at = datetime.utcnow()
-                    print(f"✅ Updated track: {item['name']} ({track_id})")
+                    existing_track.genre = genre
+                    print(f"✅ Updated track: {track_name} ({track_id})")
                 else:
+                    # ➕ Add new track
                     new_track = Track(
                         id=track_id,
                         user_id=user.id,
-                        name=item['name'],
-                        artist=item['artists'][0]['name'],
-                        album=item['album']['name'],
+                        name=track_name,
+                        artist=artist_name,
+                        album=album_name,
                         album_image_url=item['album']['images'][0]['url'] if item['album']['images'] else None,
                         popularity=item['popularity'],
                         time_range=time_range,
                         rank=i + 1,
-                        created_at=datetime.utcnow()
+                        created_at=datetime.utcnow(),
+                        genre=genre
                     )
                     db.session.add(new_track)
-                    print(f"➕ Added new track: {item['name']} ({track_id})")
+                    print(f"➕ Added new track: {track_name} ({track_id})")
 
                 track_ids.append(track_id)
 
@@ -129,16 +150,15 @@ def fetch_and_store_user_data(user_id, spotify_api):
             db.session.rollback()
             print(f"❌ Commit failed: {str(e)}")
 
-
-        # Fetch audio features in batches
+        # 🔬 Fetch and store audio features for these tracks
         fetch_audio_features(track_ids, user.access_token, spotify_api)
 
-        # After storing tracks and features, fetch artist genres
+        # 🎭 Optional: Fetch Spotify artist genres (used for mood estimation only)
         genre_map = spotify_api.get_artists_genres(user.access_token, artist_ids)
-
         print(f"[DEBUG] artist_ids: {artist_ids}")
         print(f"[DEBUG] genre_map: {genre_map}")
 
+        # 🎨 Mapping Spotify genres to moods
         GENRE_TO_MOOD = {
             'pop': 'Happy',
             'dance pop': 'Happy',
@@ -154,8 +174,6 @@ def fetch_and_store_user_data(user_id, spotify_api):
             'trap': 'Angry'
         }
 
-        
-
         for artist_id in artist_ids:
             genres = genre_map.get(artist_id, [])
             matched = False
@@ -168,7 +186,6 @@ def fetch_and_store_user_data(user_id, spotify_api):
                         break
                 if matched:
                     break
-
 
     return dict(mood_counts)
 

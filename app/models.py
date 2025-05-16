@@ -68,6 +68,7 @@ class Track(db.Model):
     album_image_url = db.Column(db.String(200))
     popularity = db.Column(db.Integer)
     rank = db.Column(db.Integer)
+    genre = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (

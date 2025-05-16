@@ -2,6 +2,7 @@
 # chatgpt.py – GPT-based Mood Analysis Module
 # ----------------------------------------------------------
 
+import openai
 import os
 import requests
 
@@ -123,3 +124,41 @@ class ChatGPT:
             return result["choices"][0]["message"]["content"].strip()
 
         raise RuntimeError(f"OpenAI API error {response.status_code}: {response.text}")
+    
+    def classify_genre(self, track_name, artist, album):
+        """
+        Get the genre of a track using ChatGPT based on track name, artist, and album.
+        """
+        prompt = (
+            f"What is the most appropriate genre label for the song "
+            f"'{track_name}' by '{artist}' from the album '{album}'? "
+            "Reply with only one genre name, no extra explanation."
+        )
+
+        messages = [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.3
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            response = requests.post(self.api_url, headers=headers, json=data)
+            if response.ok:
+                return response.json()["choices"][0]["message"]["content"].strip()
+            else:
+                raise RuntimeError(f"OpenAI genre API error {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"[ERROR] Genre fetch failed: {e}")
+            return None

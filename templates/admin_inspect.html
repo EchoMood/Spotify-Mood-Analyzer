@@ -164,6 +164,7 @@
                             <th>Time Range</th>
                             <th>Rank</th>
                             <th>Popularity</th>
+                            <th>Genre</th>
                             <th>Mood</th>
                             <th>Valence</th>
                             <th>Energy</th>
@@ -178,6 +179,7 @@
                             <td>{{ track.time_range }}</td>
                             <td>{{ track.rank }}</td>
                             <td>{{ track.popularity }}</td>
+                            <td>{{ track.genre or "Unknown" }}</td>
                             <td>{{ track.features.mood if track.features else "Unknown" }}</td>
                             <td>{{ "%.2f"|format(track.features.valence) if track.features else "N/A" }}</td>
                             <td>{{ "%.2f"|format(track.features.energy) if track.features else "N/A" }}</td>

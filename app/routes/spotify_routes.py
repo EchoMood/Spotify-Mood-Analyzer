@@ -6,7 +6,7 @@ import uuid
 
 
 from app import spotify_api
-from app import ChatGPT
+from app import gpt
 from app.models import db, User, Track, AudioFeatures
 from app.services.spotify_ingest import refresh_token, fetch_and_store_user_data, fetch_audio_features
 
@@ -128,7 +128,7 @@ def callback():
             session['first_name'] = existing_local_user.first_name
 
             # Fetch mood data and ChatGPT summary
-            mood_counts = fetch_and_store_user_data(existing_local_user.id, spotify_api)
+            mood_counts = fetch_and_store_user_data(existing_local_user.id, spotify_api, gpt)
             session['mood_counts'] = mood_counts
 
             tracks = Track.query.filter_by(user_id=existing_local_user.id).all()
@@ -192,7 +192,7 @@ def callback():
                 session['first_name'] = existing_user.first_name or existing_user.display_name.split()[0]
 
                 # Fetch mood data again
-                mood_counts = fetch_and_store_user_data(existing_user.id, spotify_api)
+                mood_counts = fetch_and_store_user_data(existing_user.id, spotify_api, gpt)
                 session['mood_counts'] = mood_counts
                 
                 # NEW: Generate ChatGPT mood summary based on updated DB
@@ -265,7 +265,7 @@ def callback():
         session['first_name'] = user.display_name.split()[0] if user.display_name else 'User'
 
     try:
-        mood_counts = fetch_and_store_user_data(user.id, spotify_api)
+        mood_counts = fetch_and_store_user_data(user.id, spotify_api, gpt)
         print("✅ Imported Spotify data for user", user.id)
         print("🎵 Mood breakdown:", mood_counts)
         session['mood_counts'] = mood_counts

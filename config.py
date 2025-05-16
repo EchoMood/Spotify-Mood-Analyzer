@@ -20,6 +20,11 @@ class Config:
     TOKEN_URL = 'https://accounts.spotify.com/api/token'
     API_BASE_URL = 'https://api.spotify.com/v1/'
     USING_NGROK = True # set to false in prod
+    
+    # OPENAI API configuration
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+    OPENAI_API_URL = os.environ.get('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions')
+    OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
 
     # database stuff
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///app.db')  # SQLite database for development, actual for prod

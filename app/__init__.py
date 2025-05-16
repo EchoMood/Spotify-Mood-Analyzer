@@ -13,6 +13,7 @@ from config import config
 csrf = CSRFProtect()
 migrate = Migrate()
 spotify_api = SpotifyAPI()
+gpt = ChatGPT()
 
 def create_app(config_name='development'):
     """
@@ -36,6 +37,7 @@ def create_app(config_name='development'):
     db.init_app(app)
     migrate.init_app(app, db)
     spotify_api.init_app(app)
+    gpt.init_app(app)
 
     # Register blueprints
     from app.routes.user_routes import user_bp
