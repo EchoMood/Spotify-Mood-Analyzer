@@ -82,3 +82,44 @@ class ChatGPT:
 
         # Raise error if something went wrong
         raise RuntimeError(f"OpenAI API error {response.status_code}: {response.text}")
+    
+    def analyze_user_tracks(self, tracks):
+        """
+        Accepts a list of dictionaries containing track info and audio features.
+        Returns a ChatGPT-generated mood and personality summary based on the data.
+        """
+
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a music psychologist assistant. "
+                    "Given a list of songs with audio features like valence, energy, danceability, tempo, and mood, "
+                    "generate a short mood and personality summary of the user's music taste. "
+                    "Be insightful, emotionally expressive, and avoid listing the individual tracks."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Here is the user's listening data:\n{tracks}"
+            }
+        ]
+
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.8
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post(self.api_url, headers=headers, json=data)
+
+        if response.ok:
+            result = response.json()
+            return result["choices"][0]["message"]["content"].strip()
+
+        raise RuntimeError(f"OpenAI API error {response.status_code}: {response.text}")

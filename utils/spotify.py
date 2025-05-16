@@ -196,7 +196,10 @@ class SpotifyAPI:
         for i in range(0, len(track_ids), 100):
             batch = track_ids[i:i+100]
             ids_param = ",".join(batch)
-
+            
+            
+            # Debugging output
+            print(f"🔍 Fetching audio features for track IDs: {ids_param}")
             response = requests.get(
                 f"{self.api_base_url}audio-features",
                 headers=headers,
@@ -208,6 +211,14 @@ class SpotifyAPI:
                 for item in data:
                     if item:
                         features_map[item['id']] = item
+                        
+            elif response.status_code == 403:
+                print("Access to audio features denied. Likely due to Spotify Free account.")
+                for tid in batch:
+                    features_map[tid] = {
+                        "mood": "Unavailable",
+                        "note": "Upgrade to Spotify Premium to unlock full mood analysis."
+                    }
             else:
                 print("Failed to fetch audio features:", response.text)
 
@@ -239,3 +250,29 @@ class SpotifyAPI:
             return "Focused"
         else:
             return "Mixed"
+        
+    def get_artists_genres(self, access_token, artist_ids):
+        """
+        Get genres for a list of artist IDs.
+
+        Returns:
+            dict: {artist_id: [genres]}
+        """
+        headers = {'Authorization': f'Bearer {access_token}'}
+        genres_map = {}
+
+        for i in range(0, len(artist_ids), 50):
+            batch = artist_ids[i:i + 50]
+            response = requests.get(
+                f"{self.api_base_url}artists",
+                headers=headers,
+                params={"ids": ",".join(batch)}
+            )
+            if response.status_code == 200:
+                artists = response.json().get("artists", [])
+                for artist in artists:
+                    genres_map[artist['id']] = artist.get('genres', [])
+            else:
+                print("Failed to fetch artist genres:", response.text)
+
+        return genres_map

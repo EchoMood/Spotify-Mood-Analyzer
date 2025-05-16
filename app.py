@@ -107,7 +107,34 @@ def create_app(config_name='development'):
         if not session.get('first_name'):
             flash('Please complete Step 1 first.', 'warning')
             return redirect(url_for('signup'))
+        
+        if 'spotify_user_id' in session and request.method == 'POST':
+            # If the user is coming from Spotify login and has already provided their email
+            # Spotify signup continuation
+            user_id = session['spotify_user_id']
+            display_name = session.get('display_name', '')
+            access_token = session.get('access_token')
+            refresh_token = session.get('refresh_token')
+            token_expiry = datetime.fromisoformat(session.get('token_expiry'))
 
+            new_user = User(
+                id=user_id,
+                email=form.email.data,
+                display_name=display_name,
+                first_name=display_name.split()[0] if display_name else '',
+                access_token=access_token,
+                refresh_token=refresh_token,
+                token_expiry=token_expiry,
+                last_login=datetime.utcnow()
+            )
+            new_user.set_password(form.password.data)
+
+            db.session.add(new_user)
+            db.session.commit()
+            session.clear()
+            flash("Account created successfully!", "success")
+            return redirect(url_for('login'))
+        
         # Check if the form is submitted and valid
         if form.validate_on_submit():
             # Retrieve values from session (Step 1)
@@ -140,33 +167,6 @@ def create_app(config_name='development'):
             # Clear session data and redirect
             session.clear()
             flash('Account created successfully!', 'success')
-            return redirect(url_for('login'))
-        
-        if 'spotify_user_id' in session and request.method == 'POST':
-            # If the user is coming from Spotify login and has already provided their email
-            # Spotify signup continuation
-            user_id = session['spotify_user_id']
-            display_name = session.get('display_name', '')
-            access_token = session.get('access_token')
-            refresh_token = session.get('refresh_token')
-            token_expiry = datetime.fromisoformat(session.get('token_expiry'))
-
-            new_user = User(
-                id=user_id,
-                email=form.email.data,
-                display_name=display_name,
-                first_name=display_name.split()[0] if display_name else '',
-                access_token=access_token,
-                refresh_token=refresh_token,
-                token_expiry=token_expiry,
-                last_login=datetime.utcnow()
-            )
-            new_user.set_password(form.password.data)
-
-            db.session.add(new_user)
-            db.session.commit()
-            session.clear()
-            flash("Account created successfully!", "success")
             return redirect(url_for('login'))
 
         return render_template('signup_cred.html', form=form)
@@ -211,7 +211,7 @@ def create_app(config_name='development'):
         session['state'] = state
 
         # Define scopes needed for the application
-        scope = 'user-top-read user-read-private user-read-recently-played'
+        scope = 'user-top-read user-read-private user-read-recently-played user-read-email'
 
         # Get authorization URL from Spotify API utility
         auth_url = spotify_api.get_auth_url(state, scope)
@@ -266,6 +266,59 @@ def create_app(config_name='development'):
         if not user_data:
             flash('Failed to retrieve user information.', 'danger')
             return redirect(url_for('index'))
+        
+        # STEP: Check if the Spotify email matches a local user
+        if 'email' in user_data and user_data['email']:
+            existing_local_user = User.query.filter_by(email=user_data['email']).first()
+
+            if existing_local_user and existing_local_user.id.startswith("local_"):
+                print(f"🎯 Overwriting local user ID {existing_local_user.id} with Spotify ID {user_data['id']}")
+
+                old_id = existing_local_user.id
+                existing_local_user.id = user_data['id']
+                existing_local_user.display_name = user_data.get('display_name', '')
+                existing_local_user.first_name = user_data.get('display_name', '').split()[0] if user_data.get('display_name') else ''
+                existing_local_user.access_token = access_token
+                existing_local_user.refresh_token = refresh_token
+                existing_local_user.token_expiry = token_expiry
+                existing_local_user.last_login = datetime.utcnow()
+
+                # Migrate foreign keys (e.g. Track, AudioFeatures)
+                Track.query.filter_by(user_id=old_id).update({'user_id': user_data['id']})
+                db.session.commit()
+
+                session['user_id'] = user_data['id']
+                session['user_email'] = existing_local_user.email
+                session['first_name'] = existing_local_user.first_name
+
+                # Fetch mood data and ChatGPT summary
+                mood_counts = fetch_and_store_user_data(existing_local_user.id, spotify_api)
+                session['mood_counts'] = mood_counts
+
+                tracks = Track.query.filter_by(user_id=existing_local_user.id).all()
+                feature_map = {
+                    f.track_id: f for f in AudioFeatures.query.filter(AudioFeatures.track_id.in_([t.id for t in tracks])).all()
+                }
+
+                gpt_input = []
+                for track in tracks:
+                    features = feature_map.get(track.id)
+                    if features:
+                        gpt_input.append({
+                            "name": track.name,
+                            "artist": track.artist,
+                            "valence": features.valence,
+                            "energy": features.energy,
+                            "danceability": features.danceability,
+                            "tempo": features.tempo,
+                            "mood": features.mood
+                        })
+
+                chatgpt = ChatGPT(app)
+                mood_summary = chatgpt.analyze_user_tracks(gpt_input)
+                session['mood_summary'] = mood_summary
+
+                return redirect(url_for('visualise'))
 
         # Save or update user in database
         user = User.query.filter_by(id=user_data['id']).first()
@@ -660,6 +713,11 @@ def create_app(config_name='development'):
             features = features_map.get(track_id)
 
             if not features:
+                continue
+            
+            # Check if it's a fallback feature due to 403
+            if features.get("mood") == "Unavailable":
+                print(f"⚠️ Skipping track {track_id}: Premium-only feature access.")
                 continue
 
             audio_feature = AudioFeatures.query.filter_by(id=track_id).first()
