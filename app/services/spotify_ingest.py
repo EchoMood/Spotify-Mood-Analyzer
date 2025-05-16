@@ -105,6 +105,12 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
             genre = gpt.classify_genre(track_name, artist_name, album_name)
             print(f"[GPT] Genre for '{track_name}' by {artist_name}: {genre}")
 
+            # 🔍 Get mood using GPT from basic audio features if available
+            track_features = spotify_api.get_audio_features(user.access_token, [track_id]).get(track_id, {})
+            track_summary = f"{track_name} by {artist_name} with valence {track_features.get('valence')} and energy {track_features.get('energy')}"
+            mood = gpt.analyze_mood(track_summary)
+            print(f"[GPT] Mood for '{track_name}': {mood}")
+
             try:
                 # 🛠 Update if existing track found
                 existing_track = Track.query.filter_by(
@@ -118,6 +124,7 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
                     existing_track.popularity = item['popularity']
                     existing_track.created_at = datetime.utcnow()
                     existing_track.genre = genre
+                    existing_track.mood = mood
                     print(f"✅ Updated track: {track_name} ({track_id})")
                 else:
                     # ➕ Add new track
@@ -132,7 +139,8 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
                         time_range=time_range,
                         rank=i + 1,
                         created_at=datetime.utcnow(),
-                        genre=genre
+                        genre=genre,
+                        mood=mood
                     )
                     db.session.add(new_track)
                     print(f"➕ Added new track: {track_name} ({track_id})")
@@ -153,41 +161,18 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
         # 🔬 Fetch and store audio features for these tracks
         fetch_audio_features(track_ids, user.access_token, spotify_api)
 
-        # 🎭 Optional: Fetch Spotify artist genres (used for mood estimation only)
-        genre_map = spotify_api.get_artists_genres(user.access_token, artist_ids)
-        print(f"[DEBUG] artist_ids: {artist_ids}")
-        print(f"[DEBUG] genre_map: {genre_map}")
+    # 📊 Count moods from GPT-classified Track table
+    from sqlalchemy import func
+    track_moods = (
+        db.session.query(Track.mood, func.count(Track.mood))
+        .filter(Track.user_id == user.id)
+        .group_by(Track.mood)
+        .all()
+    )
 
-        # 🎨 Mapping Spotify genres to moods
-        GENRE_TO_MOOD = {
-            'pop': 'Happy',
-            'dance pop': 'Happy',
-            'sad indie': 'Sad',
-            'emo': 'Sad',
-            'chillwave': 'Chill',
-            'ambient': 'Chill',
-            'metal': 'Angry',
-            'rap': 'Focused',
-            'classical': 'Focused',
-            'hip hop': 'Focused',
-            'rock': 'Happy',
-            'trap': 'Angry'
-        }
+    mood_counts = {mood: count for mood, count in track_moods if mood and mood != "Unavailable"}
 
-        for artist_id in artist_ids:
-            genres = genre_map.get(artist_id, [])
-            matched = False
-            for genre in genres:
-                for key in GENRE_TO_MOOD:
-                    if key in genre:
-                        mood = GENRE_TO_MOOD[key]
-                        mood_counts[mood] += 1
-                        matched = True
-                        break
-                if matched:
-                    break
-
-    return dict(mood_counts)
+    return mood_counts
 
 # ----------------------------------------------------------
 # Fetch Audio Features Helper Function

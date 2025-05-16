@@ -180,7 +180,7 @@
                             <td>{{ track.rank }}</td>
                             <td>{{ track.popularity }}</td>
                             <td>{{ track.genre or "Unknown" }}</td>
-                            <td>{{ track.features.mood if track.features else "Unknown" }}</td>
+                            <td>{{ track.mood or "Unknown" }}</td>
                             <td>{{ "%.2f"|format(track.features.valence) if track.features else "N/A" }}</td>
                             <td>{{ "%.2f"|format(track.features.energy) if track.features else "N/A" }}</td>
                         </tr>

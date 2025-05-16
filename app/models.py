@@ -69,6 +69,7 @@ class Track(db.Model):
     popularity = db.Column(db.Integer)
     rank = db.Column(db.Integer)
     genre = db.Column(db.String(100))
+    mood = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (
