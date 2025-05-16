@@ -143,17 +143,26 @@ def callback():
                     "mood": track.mood or "Unknown"
                 })
 
-            # Call GPT and store response
+            # 🧠 Generate mood summary
             mood_summary = gpt.analyze_user_tracks(gpt_input)
             session['mood_summary'] = mood_summary
-            
-            # 💬 Call GPT for mood-based song recommendations
-            gpt_recs_by_mood = gpt.recommend_tracks_by_mood(mood_counts)
 
-            # 🎨 Enrich with album cover via Spotify API
+            # 💬 Generate GPT-based mood-based song recommendations
+            gpt_recs_by_mood = gpt.recommend_tracks_by_mood(gpt_input)
+
+            # 🧬 Infer MBTI type (e.g., "INTJ")
+            session['mbti_type'] = gpt.infer_mbti_type(gpt_input)
+
+            # 🧠 Generate one-line personality summary
+            session['mbti_summary'] = gpt.infer_mbti_summary(gpt_input)
+
+            # 🎨 Generate MBTI + mood-based personality image
+            dominant_mood = max(mood_counts, key=mood_counts.get, default="Chill")
+            personality_image_url = gpt.generate_personality_image_url(session['mbti_type'], dominant_mood)
+            session['personality_image_url'] = personality_image_url
+
+            # 🎵 Enrich GPT recommendations with album art
             recommended_tracks = enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api)
-
-            # 💾 Save to session for rendering
             session['recommended_tracks_by_mood'] = recommended_tracks
 
             return redirect(url_for('visual.visualise'))
@@ -213,17 +222,26 @@ def callback():
                         "mood": track.mood or "Unknown"
                     })
 
-                # Call GPT and store response
+                # 🧠 Generate mood summary
                 mood_summary = gpt.analyze_user_tracks(gpt_input)
                 session['mood_summary'] = mood_summary
-                
-                # 💬 Call GPT for mood-based song recommendations
-                gpt_recs_by_mood = gpt.recommend_tracks_by_mood(mood_counts)
 
-                # 🎨 Enrich with album cover via Spotify API
+                # 💬 Generate GPT-based mood-based song recommendations
+                gpt_recs_by_mood = gpt.recommend_tracks_by_mood(gpt_input)
+
+                # 🧬 Infer MBTI type (e.g., "INTJ")
+                session['mbti_type'] = gpt.infer_mbti_type(gpt_input)
+
+                # 🧠 Generate one-line personality summary
+                session['mbti_summary'] = gpt.infer_mbti_summary(gpt_input)
+
+                # 🎨 Generate MBTI + mood-based personality image
+                dominant_mood = max(mood_counts, key=mood_counts.get, default="Chill")
+                personality_image_url = gpt.generate_personality_image_url(session['mbti_type'], dominant_mood)
+                session['personality_image_url'] = personality_image_url
+
+                # 🎵 Enrich GPT recommendations with album art
                 recommended_tracks = enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api)
-
-                # 💾 Save to session for rendering
                 session['recommended_tracks_by_mood'] = recommended_tracks
 
                 return redirect(url_for('visual.visualise'))
@@ -286,17 +304,26 @@ def callback():
                 "mood": track.mood or "Unknown"
             })
 
-        # Call GPT and store response
+        # 🧠 Generate mood summary
         mood_summary = gpt.analyze_user_tracks(gpt_input)
         session['mood_summary'] = mood_summary
+
+        # 💬 Generate GPT-based mood-based song recommendations
+        gpt_recs_by_mood = gpt.recommend_tracks_by_mood(gpt_input)
+
+        # 🧬 Infer MBTI type (e.g., "INTJ")
+        session['mbti_type'] = gpt.infer_mbti_type(gpt_input)
+
+        # 🧠 Generate one-line personality summary
+        session['mbti_summary'] = gpt.infer_mbti_summary(gpt_input)
+
+        # 🎨 Generate MBTI + mood-based personality image
+        dominant_mood = max(mood_counts, key=mood_counts.get, default="Chill")
+        personality_image_url = gpt.generate_personality_image_url(session['mbti_type'], dominant_mood)
+        session['personality_image_url'] = personality_image_url
         
-        # 💬 Call GPT for mood-based song recommendations
-        gpt_recs_by_mood = gpt.recommend_tracks_by_mood(mood_counts)
-
-        # 🎨 Enrich with album cover via Spotify API
+        # 🎵 Enrich GPT recommendations with album art
         recommended_tracks = enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api)
-
-        # 💾 Save to session for rendering
         session['recommended_tracks_by_mood'] = recommended_tracks
 
     except Exception as e:

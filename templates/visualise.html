@@ -104,58 +104,41 @@
     <section class="personality-card">
         <h2 class="section-title">Your Personality</h2>
         <div class="card-layout">
-
+    
             <!-- Left: MBTI and AI-generated image -->
             <div class="left">
-                <h3>INTJ</h3>
-                <img src="/static/images/virtual-pet.png" alt="AI-generated personality character">
+                <h3>{{ personality.mbti }}</h3>
+                <img src="{{ personality.image }}" alt="AI-generated personality character">
+                <h3>{{ first_name }}</h3>
             </div>
-
+    
             <!-- Right: Summary and related songs -->
             <div class="centre">
-                <p class="summary">Strategic, independent, and insightful.</p>
+                <p class="summary">{{ personality.summary }}</p>
                 <p>Related Songs:</p>
                 <ul class="related-songs">
-                    <!-- Song 1 -->
+                    {% for song in personality.related_songs %}
                     <li class="song-item">
-                        <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
+                        <img src="{{ song.image }}" alt="Album cover" class="album-cover">
                         <div class="song-info">
-                            <p class="song-title">Song 1</p>
-                            <p class="song-artist">Artist 1</p>
+                            <p class="song-title">{{ song.name }}</p>
+                            <p class="song-artist">{{ song.artist }}</p>
                         </div>
                     </li>
-
-                    <!-- Song 2 -->
-                    <li class="song-item">
-                        <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
-                        <div class="song-info">
-                            <p class="song-title">Song 1</p>
-                            <p class="song-artist">Artist 1</p>
-                        </div>
-                    </li>
-
-                    <!-- Song 3 -->
-                    <li class="song-item">
-                        <img src="{{ url_for('static', filename='images/sample-album.jpg') }}" alt="Album cover" class="album-cover">
-                        <div class="song-info">
-                            <p class="song-title">Song 1</p>
-                            <p class="song-artist">Artist 1</p>
-                        </div>
-                    </li>
+                    {% endfor %}
                 </ul>
-
-                <button class="share-button">Share This Card</button>
-
             </div>
+    
             <div class="clear"></div>
-
-            <!-- Personality Summary -->
+    
+            <!-- Personality Summary (duplicate for design symmetry, optional) -->
             <div class="right">
                 <p>{{ mood_summary }}</p>
             </div>
-
+            
+            
         </div>
-        
+        <button class="share-button">Share This Card</button>
     </section>
 
 </body>
