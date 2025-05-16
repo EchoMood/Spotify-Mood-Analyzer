@@ -404,10 +404,15 @@ For commercial use, please contact the owner.
 
 ## 👌 Acknowledgements
 
-Built with ❤️ using:
-- [Flask](https://flask.palletsprojects.com/)
-- [Spotify API](https://developer.spotify.com/documentation/web-api/)
-- [OpenAI GPT-4 + DALL·E](https://platform.openai.com/)
-- [ngrok](https://ngrok.com)
+EchoMood was proudly built with ❤️ using a stack of modern, powerful technologies:
 
+- [Flask](https://flask.palletsprojects.com/) — the Python web framework powering our backend routing and templating.
+- [Spotify Web API](https://developer.spotify.com/documentation/web-api/) — used for authenticating users and analyzing their listening history.
+- [OpenAI GPT-4](https://platform.openai.com/docs/guides/gpt) — powers mood inference, MBTI personality prediction, and music-based personality summaries.
+- [OpenAI DALL·E](https://platform.openai.com/docs/guides/images) — generates personalized visual character art based on inferred personality and music mood.
+- [ngrok](https://ngrok.com/) — exposes our local Flask app securely over HTTPS, enabling OAuth callbacks and testing Spotify integrations.
+- [SQLAlchemy](https://www.sqlalchemy.org/) — handles database ORM and persistence of user data, tracks, audio features, and more.
+- [WTForms](https://wtforms.readthedocs.io/) — manages robust form handling and validation for login, signup, and user profile flows.
+- [Jinja2](https://jinja.palletsprojects.com/) — used for rendering beautiful HTML templates dynamically with backend data.
+- [Pytest](https://docs.pytest.org/) — ensures backend routes and database logic remain stable with automated unit tests.
 ---
