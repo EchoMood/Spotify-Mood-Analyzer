@@ -2,9 +2,17 @@
 
 ![Made with Flask](https://img.shields.io/badge/Made%20with-Flask-blue)
 ![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Frontend-HTML](https://img.shields.io/badge/Frontend-HTML5-orange?logo=html5&logoColor=white)
+![CSS](https://img.shields.io/badge/Styling-CSS3-blue?logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/Scripting-JavaScript-yellow?logo=javascript&logoColor=black)
+![Spotify API](https://img.shields.io/badge/API-Spotify-1DB954?logo=spotify&logoColor=white)
+![OpenAI API](https://img.shields.io/badge/API-OpenAI-blueviolet?logo=openai&logoColor=white)
+![DALL·E](https://img.shields.io/badge/ImageGen-DALL·E-ff69b4?logo=openai&logoColor=white)
 ![Ngrok](https://img.shields.io/badge/Tunnel-Ngrok-black?logo=ngrok)
-![Spotify](https://img.shields.io/badge/API-Spotify-1DB954?logo=spotify&logoColor=white)
-![OpenAI](https://img.shields.io/badge/API-OpenAI-blueviolet?logo=openai&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/ORM-SQLAlchemy-4479A1?logo=databricks&logoColor=white)
+![WTForms](https://img.shields.io/badge/Forms-WTForms-informational)
+![Jinja2](https://img.shields.io/badge/Templates-Jinja2-orange)
+![Pytest](https://img.shields.io/badge/Tests-Pytest-6a5acd?logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/License-Personal%20Use-lightgrey)
 
 ---
