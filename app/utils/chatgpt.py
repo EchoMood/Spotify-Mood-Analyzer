@@ -164,3 +164,56 @@ class ChatGPT:
         except Exception as e:
             print(f"[ERROR] Genre fetch failed: {e}")
             return None
+        
+    def recommend_tracks_by_mood(self, tracks):
+        """
+        Accepts a list of tracks with name, artist, genre, and mood.
+        Asks GPT to generate 3 recommended songs per mood category.
+        
+        Returns:
+            dict: { "Happy": [{"name": ..., "artist": ...}, ...], ... }
+        """
+
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a music recommendation assistant. "
+                    "Based on the user's listening history, recommend 3 different songs for each unique mood present in the data. "
+                    "Use the existing mood categories: Happy, Sad, Angry, Chill, Focused. "
+                    "Do NOT include duplicates from the user's history. "
+                    "Format the response as a JSON dictionary mapping moods to a list of 3 song recommendations. "
+                    "Each recommended song should have a 'name' and 'artist' field. "
+                    "Only include mood categories that appear in the user's data."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Here are the user's recent songs:\n{tracks}\n\nPlease recommend songs accordingly."
+            }
+        ]
+
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.75
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            response = requests.post(self.api_url, headers=headers, json=data)
+            if response.ok:
+                raw = response.json()["choices"][0]["message"]["content"]
+                import json
+                # Try parsing raw JSON block from response
+                recommendations = json.loads(raw)
+                return recommendations
+            else:
+                raise RuntimeError(f"OpenAI recommendation error {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"[ERROR] Mood recommendation failed: {e}")
+            return {}

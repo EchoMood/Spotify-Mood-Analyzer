@@ -276,3 +276,4 @@ class SpotifyAPI:
                 print("Failed to fetch artist genres:", response.text)
 
         return genres_map
+

@@ -146,6 +146,10 @@ def callback():
             # Call GPT and store response
             mood_summary = gpt.analyze_user_tracks(gpt_input)
             session['mood_summary'] = mood_summary
+            
+            # Generate GPT-based recommendations by mood
+            recommended_tracks_by_mood = gpt.recommend_tracks_by_mood(gpt_input)
+            session['recommended_tracks_by_mood'] = recommended_tracks_by_mood
 
             return redirect(url_for('visual.visualise'))
     
@@ -192,10 +196,6 @@ def callback():
 
                 # Fetch tracks and audio features from DB
                 tracks = Track.query.filter_by(user_id=user.id).all()
-                feature_map = {
-                    f.track_id: f
-                    for f in AudioFeatures.query.filter(AudioFeatures.track_id.in_([t.id for t in tracks])).all()
-                }
 
                 # Prepare track data for GPT
                 gpt_input = []
@@ -211,6 +211,11 @@ def callback():
                 # Call GPT and store response
                 mood_summary = gpt.analyze_user_tracks(gpt_input)
                 session['mood_summary'] = mood_summary
+                
+                # Generate GPT-based recommendations by mood
+                recommended_tracks_by_mood = gpt.recommend_tracks_by_mood(gpt_input)
+                session['recommended_tracks_by_mood'] = recommended_tracks_by_mood
+
 
                 return redirect(url_for('visual.visualise'))
                 
@@ -279,6 +284,11 @@ def callback():
         # Call GPT and store response
         mood_summary = gpt.analyze_user_tracks(gpt_input)
         session['mood_summary'] = mood_summary
+        
+        # Generate GPT-based recommendations by mood
+        recommended_tracks_by_mood = gpt.recommend_tracks_by_mood(gpt_input)
+        session['recommended_tracks_by_mood'] = recommended_tracks_by_mood
+
     except Exception as e:
         print("❌ Error while importing Spotify data:", str(e))
 
