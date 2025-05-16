@@ -45,28 +45,6 @@ Upload your Spotify data and generate beautiful, insightful visualizations of yo
 
 ---
 
-## 🚀 How to Run the App
-
-After installing the dependencies, start the Flask development server by running:
-
-```bash
-python3 app.py
-```
-
-If successful, you should see output like:
-
-```
- * Running on http://127.0.0.1:5000
-```
-
-👉 Open your browser and go to:
-
-> **http://127.0.0.1:5000**
-
-You should now see the Spotify Mood Analyzer web interface!
-
----
-
 ## 🌐 Setting Up ngrok (for Spotify OAuth and Public Tunneling)
 
 ngrok allows you to expose your local Flask server to the internet, which is essential for handling Spotify OAuth callbacks during development.
@@ -156,6 +134,71 @@ Forwarding                    https://cafe-ngrok-url.ngrok-free.app -> http://lo
 
 ---
 
+## 🧠 Setting Up OpenAI API (ChatGPT + DALL·E)
+
+EchoMood uses OpenAI’s powerful models—**ChatGPT (GPT-4)** for mood analysis and personality profiling, and **DALL·E 3** for AI-generated personality images.
+
+### 🔐 Step 1: Create an OpenAI Account
+
+1. Visit [https://platform.openai.com/signup](https://platform.openai.com/signup) and sign up for a free or paid OpenAI account.
+2. After logging in, go to the [API Keys page](https://platform.openai.com/account/api-keys).
+3. Click **“Create new secret key”**.
+4. Copy the key. **You will not be able to view it again later**, so store it securely (e.g., in a `.env` file or password manager).
+
+### ⚙️ Step 2: Configure Environment Variables
+
+In your project’s root directory, create a file named `.env` (if it doesn’t exist) and add the following lines:
+
+```env
+# OpenAI API credentials
+OPENAI_API_KEY=your_openai_api_key_here
+
+# API URL for GPT-4 chat completions
+OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+
+# Preferred language model (EchoMood uses GPT-4 by default)
+OPENAI_MODEL=gpt-4
+```
+
+If you want to use **DALL·E 3** for image generation, you do not need a separate key. The same `OPENAI_API_KEY` is used to call:
+
+```env
+# API endpoint for DALL·E 3 image generation
+# Used internally by EchoMood's `generate_personality_image_url()` function
+IMAGE_API_URL=https://api.openai.com/v1/images/generations
+```
+
+### 🧪 Step 3: Verify the Setup
+
+Ensure you have the OpenAI Python client installed:
+
+```bash
+pip install openai
+```
+
+Then test your key:
+
+```python
+import openai
+
+openai.api_key = "your_openai_api_key_here"
+response = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello, world!"}]
+)
+print(response.choices[0].message["content"])
+```
+
+If this returns a response from ChatGPT, your API key is working correctly.
+
+### 🔒 Security Tips
+
+- Never expose your `OPENAI_API_KEY` in client-side code or public GitHub repositories.
+- Add `.env` to your `.gitignore` to prevent accidental commits.
+- You may also use `os.environ.get()` in Python to access keys securely from the environment.
+
+---
+
 ## 🛠️ Project Structure
 
 ```
@@ -213,6 +256,28 @@ Spotify-Mood-Analyzer/
 ├── requirements.txt
 └── README.md
 ```
+
+---
+
+## 🚀 How to Run the App
+
+After installing the dependencies and obtaining up the API keys, start the Flask development server by running:
+
+```bash
+python3 app.py
+```
+
+If successful, you should see output like:
+
+```
+ * Running on http://127.0.0.1:5000
+```
+
+👉 Open your browser and go to:
+
+> **http://127.0.0.1:5000**
+
+You should now see the Spotify Mood Analyzer web interface!
 
 ---
 
