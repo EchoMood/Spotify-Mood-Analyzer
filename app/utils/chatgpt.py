@@ -371,3 +371,44 @@ class ChatGPT:
         except Exception as e:
             print(f"[DALL·E ERROR] Image generation failed: {e}")
             return None
+        
+    def infer_mood_time_ranges(self, tracks):
+        """
+        Given a list of track metadata, return a mapping from mood to time of day
+        (e.g., "Morning (6am–9am)", "Afternoon (12pm–4pm)", etc.).
+        """
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a music mood and time-of-day analysis assistant. "
+                    "Given a list of songs with associated moods, infer the time of day each mood is most commonly felt. "
+                    "Return a JSON object mapping moods to a time window. Keep responses concise, e.g., "
+                    '{"Chill": "Night (8pm–11pm)", "Happy": "Morning (9am–12pm)"}'
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Here is the user's track data:\n{tracks}"
+            }
+        ]
+
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            response = requests.post(self.api_url, headers=headers, json=data)
+            if response.ok:
+                import json
+                return json.loads(response.json()["choices"][0]["message"]["content"])
+        except Exception as e:
+            print(f"[GPT ERROR] Time range inference failed: {e}")
+            return {}

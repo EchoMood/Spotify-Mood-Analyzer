@@ -78,7 +78,7 @@
                     </div>          
                 </div>
             
-                <p class="time-of-day">Usually felt at: Night (8pm-11pm)</p>
+                <p class="time-of-day">Usually felt at: {{ mood_data[mood.lower()].time_range }}</p>
             
                 <div class="recommendations">
                     <p class="recommend-title">Recommended Songs:</p>
