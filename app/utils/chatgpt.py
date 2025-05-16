@@ -84,10 +84,11 @@ class ChatGPT:
         # Raise error if something went wrong
         raise RuntimeError(f"OpenAI API error {response.status_code}: {response.text}")
     
+
     def analyze_user_tracks(self, tracks):
         """
-        Accepts a list of dictionaries containing track info and audio features.
-        Returns a ChatGPT-generated mood and personality summary based on the data.
+        Accepts a list of dictionaries containing track metadata (name, artist, album, genre, mood).
+        Returns a ChatGPT-generated mood and personality summary based on the user's music taste.
         """
 
         messages = [
@@ -95,9 +96,10 @@ class ChatGPT:
                 "role": "system",
                 "content": (
                     "You are a music psychologist assistant. "
-                    "Given a list of songs with audio features like valence, energy, danceability, tempo, and mood, "
-                    "generate a short mood and personality summary of the user's music taste. "
-                    "Be insightful, emotionally expressive, and avoid listing the individual tracks."
+                    "Given a list of songs, each with name, artist, album, genre, and mood, "
+                    "analyze the overall mood and personality of the user. "
+                    "Be expressive and insightful in your summary. "
+                    "Do not list individual tracks. Focus on patterns and emotional themes."
                 )
             },
             {

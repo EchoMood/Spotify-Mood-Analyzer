@@ -6,6 +6,7 @@ from app.models import db, User, Track, AudioFeatures
 from app.utils.spotify import SpotifyAPI
 from app.utils.chatgpt import ChatGPT
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 
 def refresh_token(user, spotify_api):
     import base64
@@ -91,43 +92,47 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
             continue
 
         track_ids = []
-        artist_ids = []
 
         for i, item in enumerate(tracks_data['items']):
             track_id = item['id']
-            artist_id = item['artists'][0]['id']
             artist_name = item['artists'][0]['name']
             track_name = item['name']
             album_name = item['album']['name']
-            artist_ids.append(artist_id)
 
-            # 🔍 Get genre from ChatGPT
-            genre = gpt.classify_genre(track_name, artist_name, album_name)
-            print(f"[GPT] Genre for '{track_name}' by {artist_name}: {genre}")
+            # Check if track already exists for this user and time_range
+            existing_track = Track.query.filter_by(
+                id=track_id,
+                user_id=user.id,
+                time_range=time_range
+            ).first()
 
-            # 🔍 Get mood using GPT from basic audio features if available
-            track_features = spotify_api.get_audio_features(user.access_token, [track_id]).get(track_id, {})
-            track_summary = f"{track_name} by {artist_name} with valence {track_features.get('valence')} and energy {track_features.get('energy')}"
-            mood = gpt.analyze_mood(track_summary)
-            print(f"[GPT] Mood for '{track_name}': {mood}")
+            # Only call GPT if genre or mood is missing or marked Unavailable
+            genre = existing_track.genre if existing_track and existing_track.genre else gpt.classify_genre(track_name, artist_name, album_name)
+            if not existing_track or not existing_track.genre:
+                print(f"[GPT] Genre for '{track_name}' by {artist_name}: {genre}")
+
+            features = spotify_api.get_audio_features(user.access_token, [track_id]).get(track_id, {})
+            mood_input = f"{track_name} by {artist_name} with valence {features.get('valence')} and energy {features.get('energy')}"
+            mood = existing_track.mood if existing_track and existing_track.mood and existing_track.mood != "Unavailable" else gpt.analyze_mood(mood_input)
+            if not existing_track or not existing_track.mood or existing_track.mood == "Unavailable":
+                print(f"[GPT] Mood for '{track_name}': {mood}")
 
             try:
-                # 🛠 Update if existing track found
-                existing_track = Track.query.filter_by(
-                    id=track_id,
-                    user_id=user.id,
-                    time_range=time_range
-                ).first()
-
                 if existing_track:
+                    # Update essential fields
                     existing_track.rank = i + 1
                     existing_track.popularity = item['popularity']
                     existing_track.created_at = datetime.utcnow()
-                    existing_track.genre = genre
-                    existing_track.mood = mood
+
+                    if not existing_track.genre:
+                        existing_track.genre = genre
+                    if not existing_track.mood or existing_track.mood == "Unavailable":
+                        existing_track.mood = mood
+
                     print(f"✅ Updated track: {track_name} ({track_id})")
+
                 else:
-                    # ➕ Add new track
+                    # Add new track
                     new_track = Track(
                         id=track_id,
                         user_id=user.id,
@@ -150,26 +155,23 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
             except IntegrityError as e:
                 db.session.rollback()
                 print(f"⚠️ IntegrityError for track {track_id}: {str(e)}")
-                continue
 
         try:
             db.session.commit()
         except IntegrityError as e:
             db.session.rollback()
-            print(f"❌ Commit failed: {str(e)}")
+            print(f"❌ Commit failed for time range {time_range}: {str(e)}")
 
-        # 🔬 Fetch and store audio features for these tracks
+        # Fetch and update audio features (optional but still useful)
         fetch_audio_features(track_ids, user.access_token, spotify_api)
 
-    # 📊 Count moods from GPT-classified Track table
-    from sqlalchemy import func
+    # Aggregate mood counts from Track table (not AudioFeatures)
     track_moods = (
         db.session.query(Track.mood, func.count(Track.mood))
         .filter(Track.user_id == user.id)
         .group_by(Track.mood)
         .all()
     )
-
     mood_counts = {mood: count for mood, count in track_moods if mood and mood != "Unavailable"}
 
     return mood_counts

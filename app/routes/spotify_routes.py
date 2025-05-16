@@ -132,26 +132,19 @@ def callback():
             session['mood_counts'] = mood_counts
 
             tracks = Track.query.filter_by(user_id=existing_local_user.id).all()
-            feature_map = {
-                f.track_id: f for f in AudioFeatures.query.filter(AudioFeatures.track_id.in_([t.id for t in tracks])).all()
-            }
 
             gpt_input = []
             for track in tracks:
-                features = feature_map.get(track.id)
-                if features:
-                    gpt_input.append({
-                        "name": track.name,
-                        "artist": track.artist,
-                        "valence": features.valence,
-                        "energy": features.energy,
-                        "danceability": features.danceability,
-                        "tempo": features.tempo,
-                        "mood": features.mood
-                    })
+                gpt_input.append({
+                    "name": track.name,
+                    "artist": track.artist,
+                    "album": track.album,
+                    "genre": track.genre or "Unknown",
+                    "mood": track.mood or "Unknown"
+                })
 
-            chatgpt = ChatGPT(app)
-            mood_summary = chatgpt.analyze_user_tracks(gpt_input)
+            # Call GPT and store response
+            mood_summary = gpt.analyze_user_tracks(gpt_input)
             session['mood_summary'] = mood_summary
 
             return redirect(url_for('visual.visualise'))
@@ -207,24 +200,19 @@ def callback():
                 # Prepare track data for GPT
                 gpt_input = []
                 for track in tracks:
-                    features = feature_map.get(track.id)
-                    if features:
-                        gpt_input.append({
-                            "name": track.name,
-                            "artist": track.artist,
-                            "valence": features.valence,
-                            "energy": features.energy,
-                            "danceability": features.danceability,
-                            "tempo": features.tempo,
-                            "mood": features.mood
-                        })
+                    gpt_input.append({
+                        "name": track.name,
+                        "artist": track.artist,
+                        "album": track.album,
+                        "genre": track.genre or "Unknown",
+                        "mood": track.mood or "Unknown"
+                    })
 
                 # Call GPT and store response
-                chatgpt = ChatGPT(app)
-                mood_summary = chatgpt.analyze_user_tracks(gpt_input)
+                mood_summary = gpt.analyze_user_tracks(gpt_input)
                 session['mood_summary'] = mood_summary
 
-                return redirect(url_for('visualise'))
+                return redirect(url_for('visual.visualise'))
                 
             else:    
                 session['spotify_user_id'] = user_data['id']
@@ -280,21 +268,16 @@ def callback():
         # Prepare track data for GPT
         gpt_input = []
         for track in tracks:
-            features = feature_map.get(track.id)
-            if features:
-                gpt_input.append({
-                    "name": track.name,
-                    "artist": track.artist,
-                    "valence": features.valence,
-                    "energy": features.energy,
-                    "danceability": features.danceability,
-                    "tempo": features.tempo,
-                    "mood": features.mood
-                })
+            gpt_input.append({
+                "name": track.name,
+                "artist": track.artist,
+                "album": track.album,
+                "genre": track.genre or "Unknown",
+                "mood": track.mood or "Unknown"
+            })
 
         # Call GPT and store response
-        chatgpt = ChatGPT(app)
-        mood_summary = chatgpt.analyze_user_tracks(gpt_input)
+        mood_summary = gpt.analyze_user_tracks(gpt_input)
         session['mood_summary'] = mood_summary
     except Exception as e:
         print("❌ Error while importing Spotify data:", str(e))
