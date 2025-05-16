@@ -17,6 +17,9 @@ Upload your Spotify data and generate beautiful, insightful visualizations of yo
 
 - Python 3.8+
 - pip (Python package installer)
+- Spotify Developer Account
+- OpenAI API Key
+- [Ngrok](https://ngrok.com/) (for local testing)
 
 ---
 
@@ -64,47 +67,164 @@ You should now see the Spotify Mood Analyzer web interface!
 
 ---
 
+## 🌐 Setting Up ngrok (for Spotify OAuth and Public Tunneling)
+
+ngrok allows you to expose your local Flask server to the internet, which is essential for handling Spotify OAuth callbacks during development.
+
+### 🔧 Step 1: Install ngrok
+
+#### ✅ Option 1: Via Official Website (Recommended)
+1. Visit the [official ngrok download page](https://ngrok.com/download).
+2. Download the version appropriate for your operating system.
+3. Extract the downloaded archive and place the `ngrok` binary somewhere in your system path (e.g., `/usr/local/bin` or `C:\ngrok\`).
+
+#### ✅ Option 2: Via Homebrew (macOS/Linux only)
+```bash
+brew install ngrok/ngrok/ngrok
+```
+
+### 🪪 Step 2: Sign Up & Get Your Auth Token
+
+1. Go to [https://dashboard.ngrok.com/signup](https://dashboard.ngrok.com/signup) and create a free account.
+2. Once logged in, navigate to **[Your Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken)**.
+3. Copy your **Auth Token**.
+
+### 🔐 Step 3: Connect Your ngrok Account
+
+Paste your token into this command:
+
+```bash
+ngrok config add-authtoken <YOUR_AUTH_TOKEN>
+```
+
+✅ You should see a confirmation like:
+```
+Authtoken saved to configuration file: ~/.ngrok2/ngrok.yml
+```
+
+### 🚀 Step 4: Start ngrok Tunnel for Your Flask App
+
+Assuming your Flask app runs locally on port `5000`:
+
+```bash
+ngrok http 5000
+```
+
+You’ll see output like:
+
+```
+Forwarding                    https://cafe-ngrok-url.ngrok-free.app -> http://localhost:5000
+```
+
+> ✅ Copy the **`https://` public URL** — you'll need this for your Spotify redirect URI.
+
+### 🔄 Step 5: Update Spotify Redirect URI
+
+1. Go to your [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. Select your app → **Edit Settings**.
+3. Under **Redirect URIs**, add your ngrok public URL + `/callback`.  
+   Example:
+   ```
+   https://cafe-ngrok-url.ngrok-free.app/callback
+   ```
+4. Save the changes.
+
+---
+
+## 🔑 Setting Up Spotify API
+
+1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. Log in with your Spotify account.
+3. Click **Create an App** and provide the required name and description.
+4. After the app is created, you'll get:
+   - **Client ID**
+   - **Client Secret**
+
+5. In the app settings, **add redirect URIs** (as mentioned above, using your ngrok tunnel):
+   - Example:
+     ```
+     https://cafe-ngrok-url.ngrok-free.app/callback
+     ```
+
+6. Save the changes.
+7. Add your credentials to your environment variables or `.env` file:
+   ```env
+   SPOTIFY_CLIENT_ID=your_spotify_client_id
+   SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+   SPOTIFY_REDIRECT_URI=https://your-ngrok-url.ngrok-free.app/callback
+   ```
+
+---
+
 ## 🛠️ Project Structure
 
 ```
 Spotify-Mood-Analyzer/
-├── app.py
-├── requirements.txt
-├── README.md
+├── .env.example
+├── app/
+│   ├── __init__.py
+│   ├── models.py
+│   ├── forms.py
+│   ├── routes/
+│   │   ├── user_routes.py
+│   │   ├── spotify_routes.py
+│   │   ├── admin_routes.py
+│   │   ├── visualisation_routes.py
+│   │   └── friend_routes.py
+│   ├── services/
+│   │   └── spotify_ingest.py
+│   └── utils/
+│       ├── chatgpt.py
+│       └── spotify.py
+├── migrations/
+│   └── alembic.ini
+├── static/
+│   ├── css/
+│   │   ├── index.css
+│   │   ├── login.css
+│   │   ├── visualise.css
+│   │   └── share.css
+│   └── js/
+│       ├── index.js
+│       ├── login.js
+│       └── visualise.js
 ├── templates/
-│   ├── index.html
+│   ├── login.html
+│   ├── signup.html
+│   ├── signup_cred.html
+│   ├── complete_account.html
 │   ├── visualise.html
-│   ├── upload.html
+│   ├── friends.html
+│   ├── friend_search.html
 │   └── share.html
-└── static/
-    ├── css/
-    │   ├── index.css
-    │   ├── visualise.css
-    │   ├── upload.css
-    │   └── share.css
-    └── js/
-        ├── index.js
-        ├── visualise.js
-        ├── upload.js
-        └── share.js
+├── instance/
+│   ├── users.db
+│   ├── spotify_mood.db
+│   └── app.db
+├── tests/
+│   ├── test_unit.py
+│   └── selenium/
+│       ├── test_login_flow.py
+│       ├── test_homepage_button.py
+│       ├── test_friend_search.py
+│       ├── test_send_friend_request.py
+│       └── test_spotify_connect.py
+├── run.py
+├── requirements.txt
+└── README.md
 ```
-
-- `app.py` — Main Flask application.
-- `templates/` — HTML templates rendered by Flask.
-- `static/css/` — CSS files, one for each HTML page.
-- `static/js/` — JavaScript files, one for each HTML page. 
-- `requirements.txt` — Python dependencies.
-- `README.md` — Project documentation.
 
 ---
 
 ## 🔥 Features
 
-- Upload Spotify listening history for analysis.
-- Generate mood profiles based on musical taste.
-- Visualize inferred personality traits.
-- Share visualized results easily.
-- Clean, responsive web interface.
+- Upload Spotify listening history for analysis
+- Generate mood profiles based on musical taste
+- Infer MBTI personality traits using GPT-4
+- Generate AI-based personality portrait via DALL·E 3
+- Mood-based song recommendations using GPT
+- Share visualized results with friends
+- Clean, responsive web interface
 
 ---
 
@@ -115,7 +235,6 @@ Spotify-Mood-Analyzer/
   ModuleNotFoundError: No module named 'flask'
   ```
   Ensure you have installed all dependencies:
-
   ```bash
   pip install -r requirements.txt
   ```
@@ -125,7 +244,7 @@ Spotify-Mood-Analyzer/
   deactivate
   ```
 
-- Make sure you are using Python version 3.8 or higher.
+- Ensure you are using Python version 3.8 or higher.
 
 ---
 
@@ -141,11 +260,14 @@ For commercial use, please contact the owner.
 Built with ❤️ using:
 - [Flask](https://flask.palletsprojects.com/)
 - [Spotify API](https://developer.spotify.com/documentation/web-api/)
+- [OpenAI GPT-4 + DALL·E](https://platform.openai.com/)
+- [ngrok](https://ngrok.com)
 
 ---
 
-## Testing
-We implemented 5 unit tests using pytest to verify the following:
+## 🧪 Testing
+
+We implemented unit tests using pytest to verify the following:
 
 - User registration flow and database persistence
 - Admin inspection of registered users
