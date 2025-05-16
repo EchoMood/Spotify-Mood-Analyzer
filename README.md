@@ -144,3 +144,13 @@ Built with ❤️ using:
 
 ---
 
+## Testing
+We implemented 5 unit tests using pytest to verify the following:
+
+- User registration flow and database persistence
+- Admin inspection of registered users
+- Spotify OAuth redirection
+- Friend request creation
+- Friend request acceptance and status update
+
+All tests are self-contained and run on an in-memory test database. They simulate form submissions and validate both frontend behavior (redirects) and backend logic (data updates).
