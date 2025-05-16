@@ -2,6 +2,10 @@
 
 ![Made with Flask](https://img.shields.io/badge/Made%20with-Flask-blue)
 ![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Ngrok](https://raw.githubusercontent.com/bubenshchykov/ngrok/master/assets/ngrok-logo.png)
+![Spotify](https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg)
+![OpenAI](https://upload.wikimedia.org/wikipedia/commons/4/4b/OpenAI_Logo.svg)
+
 ![License](https://img.shields.io/badge/License-Personal%20Use-lightgrey)
 
 ---
