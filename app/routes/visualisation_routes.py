@@ -7,6 +7,7 @@ from app.models import User, Track, AudioFeatures
 
 visual_bp = Blueprint('visual', __name__)
 
+
 @visual_bp.route('/visualise')
 def visualise():
     print("Access Token from session:", session.get('access_token'))
@@ -32,10 +33,10 @@ def visualise():
     print("🔍 mood_counts:", mood_counts)
 
     total = sum(mood_counts.values()) or 1  # avoid division by zero
-    
+
     # Define mood time ranges
     mood_time_ranges = session.get('mood_time_ranges', {})
-    
+
     # Fetch user's tracks from DB
     tracks = Track.query.filter_by(user_id=user_id, time_range=time_range).all()
 
@@ -45,20 +46,20 @@ def visualise():
         if track.mood:
             grouped_tracks[track.mood.lower()].append(track)
 
-        # Aggregate genre data
-        genre_counts = Counter()
-        for track in tracks:
-            if track.genre and track.genre != "Unknown":
-                genre_counts[track.genre] += 1
+    # Aggregate genre data - FIX: This should be outside the track loop
+    genre_counts = Counter()
+    for track in tracks:
+        if track.genre and track.genre != "Unknown":
+            genre_counts[track.genre] += 1
 
-        # Get top genres (limit to top 8 for chart readability)
-        top_genres = dict(genre_counts.most_common(8))
+    # Get top genres (limit to top 8 for chart readability)
+    top_genres = dict(genre_counts.most_common(8))
 
-        # If there are other genres beyond the top 8, group them as "Other"
-        if len(genre_counts) > 8:
-            other_count = sum(count for genre, count in genre_counts.most_common()[8:])
-            if other_count > 0:
-                top_genres["Other"] = other_count
+    # If there are other genres beyond the top 8, group them as "Other"
+    if len(genre_counts) > 8:
+        other_count = sum(count for genre, count in genre_counts.most_common()[8:])
+        if other_count > 0:
+            top_genres["Other"] = other_count
 
     # Build mood data dictionary
     mood_data = {}
@@ -73,7 +74,9 @@ def visualise():
             "top_track": {
                 "name": top_track.name if top_track else "Top Song",
                 "artist": top_track.artist if top_track else "Top Artist",
-                "image": top_track.album_image_url or url_for('static', filename='images/sample-album.jpg') if top_track else url_for('static', filename='images/sample-album.jpg')
+                "image": top_track.album_image_url or url_for('static',
+                                                              filename='images/sample-album.jpg') if top_track else url_for(
+                    'static', filename='images/sample-album.jpg')
             } if top_track else None,
             "recommended_tracks": [],  # will be filled using session below
             "time_range": mood_time_ranges.get(mood.capitalize(), "Night (8pm–11pm)")  # ⏰ AI-enhanced
@@ -85,8 +88,8 @@ def visualise():
         mood_data[mood]["recommended_tracks"] = recommended_songs.get(mood.capitalize(), [])
 
     # Mood/personality summary
-    mood_summary = session.get('mood_summary', 'We couldn’t generate your mood summary at this time.')
-    
+    mood_summary = session.get('mood_summary', "Sorry we couldn't retrieve your mood summary :(")
+
     # Get top 6 tracks based on popularity (and then rank)
     top_6_tracks = sorted(tracks, key=lambda x: (-x.popularity, x.rank or 9999))[:6]
     related_songs = [
@@ -114,7 +117,8 @@ def visualise():
         personality=personality_data,
         mood_summary=mood_summary,
         mood_counts=mood_counts,
-        recommended_songs=recommended_songs
+        recommended_songs=recommended_songs,
+        genre_data=top_genres  # Fix: Pass the correct variable
     )
 
 
