@@ -2,10 +2,9 @@
 
 ![Made with Flask](https://img.shields.io/badge/Made%20with-Flask-blue)
 ![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue)
-![Ngrok](https://raw.githubusercontent.com/bubenshchykov/ngrok/master/assets/ngrok-logo.png)
-![Spotify](https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg)
-![OpenAI](https://upload.wikimedia.org/wikipedia/commons/4/4b/OpenAI_Logo.svg)
-
+![Ngrok](https://img.shields.io/badge/Tunnel-Ngrok-black?logo=ngrok)
+![Spotify](https://img.shields.io/badge/API-Spotify-1DB954?logo=spotify&logoColor=white)
+![OpenAI](https://img.shields.io/badge/API-OpenAI-blueviolet?logo=openai&logoColor=white)
 ![License](https://img.shields.io/badge/License-Personal%20Use-lightgrey)
 
 ---
