@@ -67,7 +67,7 @@
                 </div>
                 <h3>{{ mood }}</h3>
                 <p>{{ count }} track{{ 's' if count > 1 else '' }}</p>
-                <h4>Top Song</h4>
+                <h4 class="top-heading">Top Song</h4>
 
                 <div class="top-song">
                     {% set top = mood_data[mood.lower()].top_track %}

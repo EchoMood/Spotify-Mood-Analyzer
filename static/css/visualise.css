@@ -41,7 +41,10 @@ body {
 .mood-cards-container {
   padding: 60px 20px;
 }
-
+.top-heading {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
 .section-title {
   font-size: 1.75rem;
   margin-bottom: 20px;
