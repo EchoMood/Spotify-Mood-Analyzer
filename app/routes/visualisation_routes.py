@@ -33,6 +33,9 @@ def visualise():
 
     total = sum(mood_counts.values()) or 1  # avoid division by zero
     
+    # Define mood time ranges
+    mood_time_ranges = session.get('mood_time_ranges', {})
+    
     # Fetch user's tracks from DB
     tracks = Track.query.filter_by(user_id=user_id, time_range=time_range).all()
 
@@ -58,7 +61,8 @@ def visualise():
                 "artist": top_track.artist if top_track else "Top Artist",
                 "image": top_track.album_image_url or url_for('static', filename='images/sample-album.jpg') if top_track else url_for('static', filename='images/sample-album.jpg')
             } if top_track else None,
-            "recommended_tracks": []  # will be filled using session below
+            "recommended_tracks": [],  # will be filled using session below
+            "time_range": mood_time_ranges.get(mood.capitalize(), "Night (8pm–11pm)")  # ⏰ AI-enhanced
         }
 
     # Load GPT-recommended songs

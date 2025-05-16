@@ -24,13 +24,13 @@
         </nav>
         
         <h1 class="page-title">Hi {{ first_name }}</h1>
-         {% if is_friend_view %}
+        <h2 class="greeting">
+            {% if is_friend_view %}
             {{ first_name }}'s Spotify Mood Analysis
-        {% else %}
-        Your Spotify Mood Analysis
-        {% endif %}
-
-        <h2 class="greeting">Your Spotify Mood Analysis</h2>
+            {% else %}
+            Your Spotify Mood Analysis
+            {% endif %}
+        </h2>
         <br>
         <p class="subheading">An overview of your mood patterns and music-driven personality</p>
     
@@ -78,7 +78,7 @@
                     </div>          
                 </div>
             
-                <p class="time-of-day">Usually felt at: Night (8pm-11pm)</p>
+                <p class="time-of-day">Usually felt at: {{ mood_data[mood.lower()].time_range }}</p>
             
                 <div class="recommendations">
                     <p class="recommend-title">Recommended Songs:</p>

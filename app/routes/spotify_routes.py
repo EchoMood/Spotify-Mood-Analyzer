@@ -160,6 +160,10 @@ def callback():
             dominant_mood = max(mood_counts, key=mood_counts.get, default="Chill")
             personality_image_url = gpt.generate_personality_image_url(session['mbti_type'], dominant_mood)
             session['personality_image_url'] = personality_image_url
+            
+            # ⏰ NEW: Infer mood-wise usual time of day
+            mood_time_ranges = gpt.infer_mood_time_ranges(gpt_input)
+            session['mood_time_ranges'] = mood_time_ranges
 
             # 🎵 Enrich GPT recommendations with album art
             recommended_tracks = enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api)
@@ -239,6 +243,10 @@ def callback():
                 dominant_mood = max(mood_counts, key=mood_counts.get, default="Chill")
                 personality_image_url = gpt.generate_personality_image_url(session['mbti_type'], dominant_mood)
                 session['personality_image_url'] = personality_image_url
+                
+                # ⏰ NEW: Infer mood-wise usual time of day
+                mood_time_ranges = gpt.infer_mood_time_ranges(gpt_input)
+                session['mood_time_ranges'] = mood_time_ranges
 
                 # 🎵 Enrich GPT recommendations with album art
                 recommended_tracks = enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api)
@@ -321,6 +329,10 @@ def callback():
         dominant_mood = max(mood_counts, key=mood_counts.get, default="Chill")
         personality_image_url = gpt.generate_personality_image_url(session['mbti_type'], dominant_mood)
         session['personality_image_url'] = personality_image_url
+        
+        # ⏰ NEW: Infer mood-wise usual time of day
+        mood_time_ranges = gpt.infer_mood_time_ranges(gpt_input)
+        session['mood_time_ranges'] = mood_time_ranges
         
         # 🎵 Enrich GPT recommendations with album art
         recommended_tracks = enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api)
