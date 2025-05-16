@@ -109,28 +109,64 @@ Forwarding                    https://cafe-ngrok-url.ngrok-free.app -> http://lo
 
 ---
 
-## 🔑 Setting Up Spotify API
+---
 
-1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
-2. Log in with your Spotify account.
-3. Click **Create an App** and provide the required name and description.
-4. After the app is created, you'll get:
-   - **Client ID**
-   - **Client Secret**
+## 🔑 Setting Up Spotify API (OAuth Integration)
 
-5. In the app settings, **add redirect URIs** (as mentioned above, using your ngrok tunnel):
-   - Example:
-     ```
-     https://cafe-ngrok-url.ngrok-free.app/callback
-     ```
+EchoMood uses the **Spotify Web API** to fetch users’ listening history, top tracks, and audio features. To enable this functionality, you'll need to register a Spotify Developer App and configure the necessary environment variables.
 
-6. Save the changes.
-7. Add your credentials to your environment variables or `.env` file:
-   ```env
-   SPOTIFY_CLIENT_ID=your_spotify_client_id
-   SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-   SPOTIFY_REDIRECT_URI=https://your-ngrok-url.ngrok-free.app/callback
+### 🎯 Step-by-Step Instructions
+
+#### 1. Create a Spotify Developer Account
+- Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+- Sign in using your **Spotify account** (you can use your existing one or create a new one).
+- Read and accept the **Developer Terms of Service**.
+
+#### 2. Create an Application
+- Click the **“Create an App”** button.
+- Enter a suitable **App Name** (e.g., `EchoMood`) and **App Description** (e.g., “A web app for Spotify-based mood analysis”).
+- Agree to the terms and create the app.
+
+#### 3. Get Your Credentials
+After creating your app, you'll be taken to the app overview screen. Here you’ll find:
+- **Client ID**: A unique identifier for your app.
+- **Client Secret**: Keep this private. Used to authenticate your app with Spotify.
+
+#### 4. Configure Redirect URIs (VERY IMPORTANT)
+Spotify OAuth requires a **Redirect URI**, which is where Spotify will send the user after authentication.
+
+- In the app dashboard, click **Edit Settings**.
+- Under **Redirect URIs**, add your callback URI:
+  - If running locally with **ngrok**, your URI will look like:
+    ```
+    https://your-ngrok-subdomain.ngrok-free.app/callback
+    ```
+  - Replace with your **actual ngrok URL**, which changes each time you restart unless you're on a paid ngrok plan.
+- Click **Save**.
+
+#### 5. Set Environment Variables
+To securely provide your credentials to the Flask application, add them to your `.env` file or environment configuration:
+
+```env
+SPOTIFY_CLIENT_ID=your_spotify_client_id_here
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret_here
+SPOTIFY_REDIRECT_URI=https://your-ngrok-subdomain.ngrok-free.app/callback
+```
+
+> ✅ Make sure the redirect URI here **matches exactly** what you added in the Spotify dashboard (including `https://`).
+
+### 🧪 How to Test It
+
+Once configured:
+
+1. Start your Flask server.
+2. Expose it using ngrok:
+   ```bash
+   ngrok http 5000
    ```
+3. Update your **redirect URI** in Spotify dashboard with the new ngrok URL (if it changed).
+4. Visit your app’s homepage and click **“Connect with Spotify”**.
+5. You should be redirected to Spotify's login page. After logging in and granting permissions, you're redirected back to your app and user data is fetched successfully.
 
 ---
 
