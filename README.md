@@ -2,6 +2,17 @@
 
 ![Made with Flask](https://img.shields.io/badge/Made%20with-Flask-blue)
 ![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Frontend-HTML](https://img.shields.io/badge/Frontend-HTML5-orange?logo=html5&logoColor=white)
+![CSS](https://img.shields.io/badge/Styling-CSS3-blue?logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/Scripting-JavaScript-yellow?logo=javascript&logoColor=black)
+![Spotify API](https://img.shields.io/badge/API-Spotify-1DB954?logo=spotify&logoColor=white)
+![OpenAI API](https://img.shields.io/badge/API-OpenAI-blueviolet?logo=openai&logoColor=white)
+![DALL·E](https://img.shields.io/badge/ImageGen-DALL·E-ff69b4?logo=openai&logoColor=white)
+![Ngrok](https://img.shields.io/badge/Tunnel-Ngrok-black?logo=ngrok)
+![SQLAlchemy](https://img.shields.io/badge/ORM-SQLAlchemy-4479A1?logo=databricks&logoColor=white)
+![WTForms](https://img.shields.io/badge/Forms-WTForms-informational)
+![Jinja2](https://img.shields.io/badge/Templates-Jinja2-orange)
+![Pytest](https://img.shields.io/badge/Tests-Pytest-6a5acd?logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/License-Personal%20Use-lightgrey)
 
 ---
@@ -109,28 +120,64 @@ Forwarding                    https://cafe-ngrok-url.ngrok-free.app -> http://lo
 
 ---
 
-## 🔑 Setting Up Spotify API
+---
 
-1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
-2. Log in with your Spotify account.
-3. Click **Create an App** and provide the required name and description.
-4. After the app is created, you'll get:
-   - **Client ID**
-   - **Client Secret**
+## 🔑 Setting Up Spotify API (OAuth Integration)
 
-5. In the app settings, **add redirect URIs** (as mentioned above, using your ngrok tunnel):
-   - Example:
-     ```
-     https://cafe-ngrok-url.ngrok-free.app/callback
-     ```
+EchoMood uses the **Spotify Web API** to fetch users’ listening history, top tracks, and audio features. To enable this functionality, you'll need to register a Spotify Developer App and configure the necessary environment variables.
 
-6. Save the changes.
-7. Add your credentials to your environment variables or `.env` file:
-   ```env
-   SPOTIFY_CLIENT_ID=your_spotify_client_id
-   SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-   SPOTIFY_REDIRECT_URI=https://your-ngrok-url.ngrok-free.app/callback
+### 🎯 Step-by-Step Instructions
+
+#### 1. Create a Spotify Developer Account
+- Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+- Sign in using your **Spotify account** (you can use your existing one or create a new one).
+- Read and accept the **Developer Terms of Service**.
+
+#### 2. Create an Application
+- Click the **“Create an App”** button.
+- Enter a suitable **App Name** (e.g., `EchoMood`) and **App Description** (e.g., “A web app for Spotify-based mood analysis”).
+- Agree to the terms and create the app.
+
+#### 3. Get Your Credentials
+After creating your app, you'll be taken to the app overview screen. Here you’ll find:
+- **Client ID**: A unique identifier for your app.
+- **Client Secret**: Keep this private. Used to authenticate your app with Spotify.
+
+#### 4. Configure Redirect URIs (VERY IMPORTANT)
+Spotify OAuth requires a **Redirect URI**, which is where Spotify will send the user after authentication.
+
+- In the app dashboard, click **Edit Settings**.
+- Under **Redirect URIs**, add your callback URI:
+  - If running locally with **ngrok**, your URI will look like:
+    ```
+    https://your-ngrok-subdomain.ngrok-free.app/callback
+    ```
+  - Replace with your **actual ngrok URL**, which changes each time you restart unless you're on a paid ngrok plan.
+- Click **Save**.
+
+#### 5. Set Environment Variables
+To securely provide your credentials to the Flask application, add them to your `.env` file or environment configuration:
+
+```env
+SPOTIFY_CLIENT_ID=your_spotify_client_id_here
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret_here
+SPOTIFY_REDIRECT_URI=https://your-ngrok-subdomain.ngrok-free.app/callback
+```
+
+> ✅ Make sure the redirect URI here **matches exactly** what you added in the Spotify dashboard (including `https://`).
+
+### 🧪 How to Test It
+
+Once configured:
+
+1. Start your Flask server.
+2. Expose it using ngrok:
+   ```bash
+   ngrok http 5000
    ```
+3. Update your **redirect URI** in Spotify dashboard with the new ngrok URL (if it changed).
+4. Visit your app’s homepage and click **“Connect with Spotify”**.
+5. You should be redirected to Spotify's login page. After logging in and granting permissions, you're redirected back to your app and user data is fetched successfully.
 
 ---
 
@@ -311,25 +358,6 @@ You should now see the Spotify Mood Analyzer web interface!
 
 - Ensure you are using Python version 3.8 or higher.
 
----
-
-## 📜 License
-
-This project is licensed for personal and educational use.  
-For commercial use, please contact the owner.
-
----
-
-## 👌 Acknowledgements
-
-Built with ❤️ using:
-- [Flask](https://flask.palletsprojects.com/)
-- [Spotify API](https://developer.spotify.com/documentation/web-api/)
-- [OpenAI GPT-4 + DALL·E](https://platform.openai.com/)
-- [ngrok](https://ngrok.com)
-
----
-
 ## 🧪 Testing
 
 We implemented both unit and system (Selenium) tests to verify key functionalities of the EchoMood application.
@@ -347,6 +375,7 @@ To run all unit tests:
 
 ```bash
 pytest tests/test_unit.py
+```
 
 ### Selenium Tests (`tests/selenium/`)
 These tests simulate real user actions in the browser:
@@ -361,3 +390,29 @@ To run all Selenium tests:
 
 ```bash
 python -m unittest discover -s tests/selenium
+```
+
+
+---
+
+## 📜 License
+
+This project is licensed for personal and educational use.  
+For commercial use, please contact the owner.
+
+---
+
+## 👌 Acknowledgements
+
+EchoMood was proudly built with ❤️ using a stack of modern, powerful technologies:
+
+- [Flask](https://flask.palletsprojects.com/) — the Python web framework powering our backend routing and templating.
+- [Spotify Web API](https://developer.spotify.com/documentation/web-api/) — used for authenticating users and analyzing their listening history.
+- [OpenAI GPT-4](https://platform.openai.com/docs/guides/gpt) — powers mood inference, MBTI personality prediction, and music-based personality summaries.
+- [OpenAI DALL·E](https://platform.openai.com/docs/guides/images) — generates personalized visual character art based on inferred personality and music mood.
+- [ngrok](https://ngrok.com/) — exposes our local Flask app securely over HTTPS, enabling OAuth callbacks and testing Spotify integrations.
+- [SQLAlchemy](https://www.sqlalchemy.org/) — handles database ORM and persistence of user data, tracks, audio features, and more.
+- [WTForms](https://wtforms.readthedocs.io/) — manages robust form handling and validation for login, signup, and user profile flows.
+- [Jinja2](https://jinja.palletsprojects.com/) — used for rendering beautiful HTML templates dynamically with backend data.
+- [Pytest](https://docs.pytest.org/) — ensures backend routes and database logic remain stable with automated unit tests.
+---
