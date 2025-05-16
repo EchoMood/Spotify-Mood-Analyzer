@@ -11,6 +11,7 @@ requests
 python-dotenv
 flask-migrate
 psycopg2==2.9.10
+openai==1.78.1
 
 # testing
 pytest
