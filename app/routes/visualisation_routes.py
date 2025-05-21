@@ -12,18 +12,18 @@ visual_bp = Blueprint('visual', __name__)
 def visualise():
     print("Access Token from session:", session.get('access_token'))
 
-    # Ensure user is logged in
-    if 'user_id' not in session:
-        flash('Please log in to view your visualisation.', 'warning')
-        return redirect(url_for('user.login'))
-
-    user_id = session['user_id']
-    user = User.query.get(user_id)
-
-    if not user:
-        flash('User not found. Please log in again.', 'warning')
-        session.clear()
-        return redirect(url_for('user.login'))
+    # # Ensure user is logged in
+    # if 'user_id' not in session:
+    #     flash('Please log in to view your visualisation.', 'warning')
+    #     return redirect(url_for('user.login'))
+    #
+    # user_id = session['user_id']
+    # user = User.query.get(user_id)
+    #
+    # if not user:
+    #     flash('User not found. Please log in again.', 'warning')
+    #     session.clear()
+    #     return redirect(url_for('user.login'))
 
     # Get selected time range (default to medium_term)
     time_range = request.args.get('time_range', 'medium_term')
@@ -37,8 +37,9 @@ def visualise():
     # Define mood time ranges
     mood_time_ranges = session.get('mood_time_ranges', {})
 
-    # Fetch user's tracks from DB
-    tracks = Track.query.filter_by(user_id=user_id, time_range=time_range).all()
+    # # Fetch user's tracks from DB
+    # tracks = Track.query.filter_by(user_id=user_id, time_range=time_range).all()
+    tracks = Track.query.all()
 
     # Organize tracks by mood
     grouped_tracks = defaultdict(list)

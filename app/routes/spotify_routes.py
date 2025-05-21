@@ -7,7 +7,7 @@ import uuid
 
 from app import spotify_api
 from app import gpt
-from app.models import db, User, Track, AudioFeatures
+from app.models import db, User, Track, AudioFeatures, Friend
 from app.services.spotify_ingest import refresh_token, fetch_and_store_user_data, fetch_audio_features, enrich_recommended_tracks_with_album_art
 
 from flask_wtf import FlaskForm
@@ -104,74 +104,44 @@ def callback():
     
 
     # STEP: Check if the Spotify email matches a local user
+    # Around line 115 where you detect a local user that matches the Spotify email
     if 'email' in user_data and user_data['email']:
         existing_local_user = User.query.filter_by(email=user_data['email']).first()
+        existing_spotify_user = User.query.filter_by(id=user_data['id']).first()
 
-        if existing_local_user and existing_local_user.id.startswith("local_"):
-            print(f"🎯 Overwriting local user ID {existing_local_user.id} with Spotify ID {user_data['id']}")
+    if existing_local_user and existing_local_user.id.startswith("local_"):
+        print(f"🎯 Found local user ID {existing_local_user.id} with same email as Spotify user {user_data['id']}")
+
+        # First, check if the Spotify ID already exists in the database
+        if existing_spotify_user:
+            print(f"⚠️ Spotify user already exists - merging accounts")
 
             old_id = existing_local_user.id
-            existing_local_user.id = user_data['id']
-            existing_local_user.display_name = user_data.get('display_name', '')
-            existing_local_user.first_name = user_data.get('display_name', '').split()[0] if user_data.get('display_name') else ''
-            existing_local_user.access_token = access_token
-            existing_local_user.refresh_token = refresh_token
-            existing_local_user.token_expiry = token_expiry
-            existing_local_user.last_login = datetime.utcnow()
 
-            # Migrate foreign keys (e.g. Track, AudioFeatures)
+            # Step 1: Update friend relationships where the local user is the user_id
+            Friend.query.filter_by(user_id=old_id).update({'user_id': user_data['id']})
+
+            # Step 2: Update friend relationships where the local user is the friend_id
+            Friend.query.filter_by(friend_id=old_id).update({'friend_id': user_data['id']})
+
+            # Step 3: Update any tracks from local user to point to Spotify user
             Track.query.filter_by(user_id=old_id).update({'user_id': user_data['id']})
+
+            # Step 4: Now it's safe to delete the local user
+            db.session.delete(existing_local_user)
             db.session.commit()
 
-            session['user_id'] = user_data['id']
-            session['user_email'] = existing_local_user.email
-            session['first_name'] = existing_local_user.first_name
+            # Step 5: Update token information on the Spotify user
+            existing_spotify_user.access_token = access_token
+            existing_spotify_user.refresh_token = refresh_token
+            existing_spotify_user.token_expiry = token_expiry
+            existing_spotify_user.last_login = datetime.utcnow()
+            db.session.commit()
 
-            # Fetch mood data and ChatGPT summary
-            mood_counts = fetch_and_store_user_data(existing_local_user.id, spotify_api, gpt)
-            session['mood_counts'] = mood_counts
-
-            tracks = Track.query.filter_by(user_id=existing_local_user.id).all()
-
-            gpt_input = []
-            for track in tracks:
-                gpt_input.append({
-                    "name": track.name,
-                    "artist": track.artist,
-                    "album": track.album,
-                    "genre": track.genre or "Unknown",
-                    "mood": track.mood or "Unknown"
-                })
-
-            # 🧠 Generate mood summary
-            mood_summary = gpt.analyze_user_tracks(gpt_input)
-            session['mood_summary'] = mood_summary
-
-            # 💬 Generate GPT-based mood-based song recommendations
-            gpt_recs_by_mood = gpt.recommend_tracks_by_mood(gpt_input)
-
-            # 🧬 Infer MBTI type (e.g., "INTJ")
-            session['mbti_type'] = gpt.infer_mbti_type(gpt_input)
-
-            # 🧠 Generate one-line personality summary
-            session['mbti_summary'] = gpt.infer_mbti_summary(gpt_input)
-
-            # 🎨 Generate MBTI + mood-based personality image
-            dominant_mood = max(mood_counts, key=mood_counts.get, default="Chill")
-            personality_image_url = gpt.generate_personality_image_url(session['mbti_type'], dominant_mood)
-            session['personality_image_url'] = personality_image_url
-            
-            # ⏰ NEW: Infer mood-wise usual time of day
-            mood_time_ranges = gpt.infer_mood_time_ranges(gpt_input)
-            session['mood_time_ranges'] = mood_time_ranges
-
-            # 🎵 Enrich GPT recommendations with album art
-            recommended_tracks = enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api)
-            session['recommended_tracks_by_mood'] = recommended_tracks
-
-            return redirect(url_for('visual.visualise'))
-    
-    
+            # Set session data
+            session['user_id'] = existing_spotify_user.id
+            session['user_email'] = existing_spotify_user.email
+            session['first_name'] = existing_spotify_user.first_name
     # save user data to the database
     user = User.query.filter_by(id=user_data['id']).first()
     if not user and user_data.get('email'):
@@ -293,6 +263,7 @@ def callback():
         session['first_name'] = user.display_name.split()[0] if user.display_name else 'User'
 
     try:
+        # todo debug here
         mood_counts = fetch_and_store_user_data(user.id, spotify_api, gpt)
         print("✅ Imported Spotify data for user", user.id)
         print("🎵 Mood breakdown:", mood_counts)

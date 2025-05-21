@@ -70,7 +70,6 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
     Returns:
         dict: A dictionary containing mood counts inferred from genres.
     """
-
     user = User.query.get(user_id)
 
     # 🔒 Validate user and access token
@@ -82,90 +81,139 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
         if not refresh_token(user, spotify_api):
             return False
 
-    time_ranges = ['short_term', 'medium_term', 'long_term']
+    time_range = 'short_term'
     mood_counts = Counter()
 
-    for time_range in time_ranges:
-        # 🎧 Get user's top tracks for each time range
-        tracks_data = spotify_api.get_top_tracks(user.access_token, time_range)
-        if not tracks_data:
-            continue
+    # 🎧 Get user's top tracks for the time range
+    tracks_data = spotify_api.get_top_tracks(user.access_token, time_range)
+    if not tracks_data or 'items' not in tracks_data:
+        print("❌ No track data returned from Spotify API")
+        return mood_counts
 
-        track_ids = []
+    print(f"✅ Retrieved {len(tracks_data['items'])} tracks from Spotify")
 
-        for i, item in enumerate(tracks_data['items']):
-            track_id = item['id']
-            artist_name = item['artists'][0]['name']
-            track_name = item['name']
-            album_name = item['album']['name']
+    # Prepare for batch processing
+    tracks_to_classify = []
+    track_map = {}
+    track_ids = []
 
-            # Check if track already exists for this user and time_range
-            existing_track = Track.query.filter_by(
-                id=track_id,
-                user_id=user.id,
-                time_range=time_range
-            ).first()
+    # First pass: collect data and identify tracks needing classification
+    for i, item in enumerate(tracks_data['items']):
+        track_id = item['id']
+        artist_name = item['artists'][0]['name']
+        track_name = item['name']
+        album_name = item['album']['name']
+        album_image = item['album']['images'][0]['url'] if item['album']['images'] else None
+        popularity = item.get('popularity', 50)  # Default to 50 if not available
 
-            # Only call GPT if genre or mood is missing or marked Unavailable
-            genre = existing_track.genre if existing_track and existing_track.genre else gpt.classify_genre(track_name, artist_name, album_name)
-            if not existing_track or not existing_track.genre:
-                print(f"[GPT] Genre for '{track_name}' by {artist_name}: {genre}")
+        # Store track info for later use
+        track_map[track_name] = {
+            'id': track_id,
+            'artist': artist_name,
+            'album': album_name,
+            'image': album_image,
+            'popularity': popularity,
+            'rank': i + 1  # Use loop index + 1 for rank
+        }
 
-            #features = spotify_api.get_audio_features(user.access_token, [track_id]).get(track_id, {})
-            mood_input = f"{track_name} by {artist_name}" #with valence {features.get('valence')} and energy {features.get('energy')}"
-            mood = existing_track.mood if existing_track and existing_track.mood and existing_track.mood != "Unavailable" else gpt.analyze_mood(mood_input)
-            if not existing_track or not existing_track.mood or existing_track.mood == "Unavailable":
-                print(f"[GPT] Mood for '{track_name}': {mood}")
+        # Check if track already exists
+        existing_track = Track.query.filter_by(
+            id=track_id,
+            user_id=user.id,
+            time_range=time_range
+        ).first()
 
-            try:
+        if existing_track and existing_track.genre and existing_track.mood:
+            # Track exists with genre and mood, just update rank and popularity
+            existing_track.rank = i + 1
+            existing_track.popularity = popularity
+            existing_track.created_at = datetime.utcnow()
+            print(f"🔄 Updated existing track: {track_name}")
+        else:
+            # New track or missing genre/mood, add to classification list
+            tracks_to_classify.append({
+                'name': track_name,
+                'artist': artist_name,
+                'album': album_name
+            })
+            track_ids.append(track_id)
+
+    # Commit updates to existing tracks
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error updating existing tracks: {str(e)}")
+
+    # If we have tracks to classify
+    if tracks_to_classify:
+        try:
+            # Batch classify genres
+            print(f"🧠 Classifying genres for {len(tracks_to_classify)} tracks")
+            genre_results = gpt.classify_genres_batch(tracks_to_classify)
+
+            # Batch classify moods
+            print(f"🧠 Classifying moods for {len(tracks_to_classify)} tracks")
+            mood_results = gpt.classify_moods_batch(tracks_to_classify)
+
+            # Add new tracks with classification results
+            for track_data in tracks_to_classify:
+                track_name = track_data['name']
+
+                if track_name not in track_map:
+                    print(f"⚠️ Track '{track_name}' not found in track map, skipping")
+                    continue
+
+                track_info = track_map[track_name]
+
+                genre = genre_results.get(track_name, "Unknown")
+                mood = mood_results.get(track_name, "Chill")  # Default to "Chill" if not classified
+
+                # Check again if track exists (in case it was added in a different session)
+                existing_track = Track.query.filter_by(
+                    id=track_info['id'],
+                    user_id=user.id,
+                    time_range=time_range
+                ).first()
+
                 if existing_track:
-                    # Update essential fields
-                    existing_track.rank = i + 1
-                    existing_track.popularity = item['popularity']
-                    existing_track.created_at = datetime.utcnow()
-
+                    # Update existing track
                     if not existing_track.genre:
                         existing_track.genre = genre
-                    if not existing_track.mood or existing_track.mood == "Unavailable":
+                    if not existing_track.mood:
                         existing_track.mood = mood
-
-                    print(f"✅ Updated track: {track_name} ({track_id})")
-
+                    existing_track.rank = track_info['rank']
+                    existing_track.popularity = track_info['popularity']
+                    existing_track.created_at = datetime.utcnow()
+                    print(f"🔄 Updated track with classifications: {track_name}")
                 else:
-                    # Add new track
+                    # Create new track
                     new_track = Track(
-                        id=track_id,
+                        id=track_info['id'],
                         user_id=user.id,
                         name=track_name,
-                        artist=artist_name,
-                        album=album_name,
-                        album_image_url=item['album']['images'][0]['url'] if item['album']['images'] else None,
-                        popularity=item['popularity'],
+                        artist=track_info['artist'],
+                        album=track_info['album'],
+                        album_image_url=track_info['image'],
+                        popularity=track_info['popularity'],
                         time_range=time_range,
-                        rank=i + 1,
+                        rank=track_info['rank'],
                         created_at=datetime.utcnow(),
                         genre=genre,
                         mood=mood
                     )
                     db.session.add(new_track)
-                    print(f"➕ Added new track: {track_name} ({track_id})")
+                    print(f"➕ Added new track: {track_name}")
 
-                track_ids.append(track_id)
-
-            except IntegrityError as e:
-                db.session.rollback()
-                print(f"⚠️ IntegrityError for track {track_id}: {str(e)}")
-
-        try:
+            # Commit all new tracks
             db.session.commit()
-        except IntegrityError as e:
+            print("✅ Successfully saved all track data")
+
+        except Exception as e:
             db.session.rollback()
-            print(f"❌ Commit failed for time range {time_range}: {str(e)}")
+            print(f"❌ Error during track classification and saving: {str(e)}")
 
-        # Fetch and update audio features (optional but still useful)
-        #fetch_audio_features(track_ids, user.access_token, spotify_api)
-
-    # Aggregate mood counts from Track table (not AudioFeatures)
+    # Aggregate mood counts from Track table
     track_moods = (
         db.session.query(Track.mood, func.count(Track.mood))
         .filter(Track.user_id == user.id)
@@ -175,7 +223,6 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
     mood_counts = {mood: count for mood, count in track_moods if mood and mood != "Unavailable"}
 
     return mood_counts
-
 # ----------------------------------------------------------
 # Fetch Audio Features Helper Function
 # ----------------------------------------------------------

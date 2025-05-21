@@ -5,6 +5,23 @@ from app.models import db, User, Friend, Track, AudioFeatures
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+
+# Add a temporary admin route (REMOVE BEFORE PRODUCTION)
+@admin_bp.route('/admin/reset_user_password/<user_id>', methods=['POST'])
+def admin_reset_password(user_id):
+    if not current_app.debug:
+        return "Not available in production", 403
+
+    user = User.query.get(user_id)
+    if not user:
+        return "User not found", 404
+
+    temp_password = "temporary123"  # Or generate a random one
+    user.set_password(temp_password)
+    db.session.commit()
+
+    return f"Password reset to: {temp_password}"
+
 @admin_bp.route('/inspect-db/<secret_token>', methods=['GET'])
 def inspect_db(secret_token):
     if secret_token != current_app.config.get('SECRET_KEY', ''):

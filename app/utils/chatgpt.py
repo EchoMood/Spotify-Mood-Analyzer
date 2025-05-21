@@ -35,11 +35,12 @@ class ChatGPT:
         if not all([self.api_key, self.api_url, self.model]):
             raise RuntimeError("Missing OpenAI configuration in app config")
 
-    def analyze_mood(self, tracks):
+    def analyze_mood(self, main_list):
         """
         Accepts a list or string of track details (e.g., name, valence, energy),
         sends it to OpenAI, and returns a single-word mood label.
         """
+
 
         # Prepare message payload for OpenAI
         messages = [
@@ -47,15 +48,15 @@ class ChatGPT:
                 "role": "system",
                 "content": (
                     "You are a music mood analysis assistant. "
-                    "Given a list of tracks and their features, infer the overall mood. "
-                    "Return only one mood label: Happy, Sad, Angry, Chill, or Focused."
+                    "Given a list of tracks and their corresponding genres, infer the mood for each song. "
+                    "Return only one mood label for each song, i.e.: Happy, Sad, Angry, Chill, or Focused. This should be appened to the overall list and output in JSON format, e.g. {track_1: happy, track_2: sad, etc}"
                 )
             },
             {
                 "role": "user",
                 "content": (
-                    f"Here is the track data:\n{tracks}\n\n"
-                    "Based on this data, what is the overall mood?"
+                    f"Here is the track data:\n{main_list}\n\n"
+                    "For each song, append the following to the output:\n'track_name': 'mood'\nOutput the entire list"
                 )
             }
         ]
@@ -127,14 +128,15 @@ class ChatGPT:
 
         raise RuntimeError(f"OpenAI API error {response.status_code}: {response.text}")
     
-    def classify_genre(self, track_name, artist, album):
+    def classify_genre(self, main_list):
         """
         Get the genre of a track using ChatGPT based on track name, artist, and album.
         """
+
         prompt = (
-            f"What is the most appropriate genre label for the song "
-            f"'{track_name}' by '{artist}' from the album '{album}'? "
-            "Reply with only one genre name, no extra explanation."
+            f"What is the most appropriate genre label for the song"
+            f"'{main_list}? "
+            f"For each song, append the following to the output:\n'track_name': 'genre'\nOutput the entire list"
         )
 
         messages = [
