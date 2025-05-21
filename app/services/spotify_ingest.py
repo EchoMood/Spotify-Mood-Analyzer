@@ -111,8 +111,8 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
             if not existing_track or not existing_track.genre:
                 print(f"[GPT] Genre for '{track_name}' by {artist_name}: {genre}")
 
-            features = spotify_api.get_audio_features(user.access_token, [track_id]).get(track_id, {})
-            mood_input = f"{track_name} by {artist_name} with valence {features.get('valence')} and energy {features.get('energy')}"
+            #features = spotify_api.get_audio_features(user.access_token, [track_id]).get(track_id, {})
+            mood_input = f"{track_name} by {artist_name}" #with valence {features.get('valence')} and energy {features.get('energy')}"
             mood = existing_track.mood if existing_track and existing_track.mood and existing_track.mood != "Unavailable" else gpt.analyze_mood(mood_input)
             if not existing_track or not existing_track.mood or existing_track.mood == "Unavailable":
                 print(f"[GPT] Mood for '{track_name}': {mood}")
@@ -163,7 +163,7 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
             print(f"❌ Commit failed for time range {time_range}: {str(e)}")
 
         # Fetch and update audio features (optional but still useful)
-        fetch_audio_features(track_ids, user.access_token, spotify_api)
+        #fetch_audio_features(track_ids, user.access_token, spotify_api)
 
     # Aggregate mood counts from Track table (not AudioFeatures)
     track_moods = (
@@ -182,59 +182,8 @@ def fetch_and_store_user_data(user_id, spotify_api, gpt):
 def fetch_audio_features(track_ids, access_token, spotify_api):
     print(f"[DEBUG] Fetching audio features for {len(track_ids)} tracks")
     # Use the unified SpotifyAPI class
-    features_map = spotify_api.get_audio_features(access_token, track_ids)
-    print(f"[DEBUG] Received features for {len(features_map)} tracks")
-
-    for track_id in track_ids:
-        features = features_map.get(track_id)
-
-        if not features:
-            continue
-        
-        # Check if it's a fallback feature due to 403
-        if features.get("mood") == "Unavailable":
-            print(f"⚠️ Skipping track {track_id}: Premium-only feature access.")
-            continue
-
-        audio_feature = AudioFeatures.query.filter_by(id=track_id).first()
-
-        if not audio_feature:
-            audio_feature = AudioFeatures(
-                id=track_id,
-                track_id=track_id,
-                danceability=features['danceability'],
-                energy=features['energy'],
-                key=features['key'],
-                loudness=features['loudness'],
-                mode=features['mode'],
-                speechiness=features['speechiness'],
-                acousticness=features['acousticness'],
-                instrumentalness=features['instrumentalness'],
-                liveness=features['liveness'],
-                valence=features['valence'],
-                tempo=features['tempo'],
-                duration_ms=features['duration_ms'],
-                time_signature=features['time_signature'],
-                mood=SpotifyAPI.analyze_mood_from_features(features)
-            )
-            db.session.add(audio_feature)
-        else:
-            audio_feature.danceability = features['danceability']
-            audio_feature.energy = features['energy']
-            audio_feature.key = features['key']
-            audio_feature.loudness = features['loudness']
-            audio_feature.mode = features['mode']
-            audio_feature.speechiness = features['speechiness']
-            audio_feature.acousticness = features['acousticness']
-            audio_feature.instrumentalness = features['instrumentalness']
-            audio_feature.liveness = features['liveness']
-            audio_feature.valence = features['valence']
-            audio_feature.tempo = features['tempo']
-            audio_feature.duration_ms = features['duration_ms']
-            audio_feature.time_signature = features['time_signature']
-            audio_feature.mood = SpotifyAPI.analyze_mood_from_features(features)
-
-    db.session.commit()
+    #features_map = spotify_api.get_audio_features(access_token, track_ids)
+    pass
     
 def enrich_recommended_tracks_with_album_art(gpt_recs_by_mood, access_token, spotify_api):
     """
