@@ -1,105 +1,72 @@
-<!-- signup_cred.html - Step 2 of Signup Flow -->
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base_auth.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>Sign Up – Credentials</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sign up to EchoMood with your login credentials.">
-    <meta name="keywords" content="EchoMood, Login, Sign Up">
-    <meta name="author" content="EchoMood Team">
+{% block title %}Sign Up – Credentials{% endblock %}
 
-    <!-- Linking stylesheet for consistent dark-themed UI -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
-</head>
+{% block meta %}
+<meta name="description" content="Sign up to EchoMood with your login credentials.">
+<meta name="keywords" content="EchoMood, Login, Sign Up">
+<meta name="author" content="EchoMood Team">
+{% endblock %}
 
-<body>
-    <!-- Background visual spotlight animation tiles -->
-    <div class="container">
-        <div class="box" style="--clr: var(--happy-color);"></div>
-        <div class="box" style="--clr: var(--sad-color);"></div>
-        <div class="box" style="--clr: var(--excited-color);"></div>
-        <div class="box" style="--clr: var(--motivated-color);"></div>
-        <div class="box" style="--clr: var(--chill-color);"></div>
-        <div class="box" style="--clr: var(--angry-color);"></div>
-        <div class="box" style="--clr: var(--happy-color);"></div>
-        <div class="box" style="--clr: var(--sad-color);"></div>
-        <div class="box" style="--clr: var(--excited-color);"></div>
-        <div class="box" style="--clr: var(--motivated-color);"></div>
-        <div class="box" style="--clr: var(--chill-color);"></div>
-        <div class="box" style="--clr: var(--angry-color);"></div>
-        <div class="box" style="--clr: var(--happy-color);"></div>
-        <div class="box" style="--clr: var(--sad-color);"></div>
-        <div class="box" style="--clr: var(--excited-color);"></div>
-        <div class="box" style="--clr: var(--angry-color);"></div>
-        <div class="box" style="--clr: var(--chill-color);"></div>
-        <div class="box" style="--clr: var(--motivated-color);"></div>
+{% block content %}
+
+<!-- Flash messages block for displaying errors or alerts -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="flash-message {{ category }}">
+    <span class="flash-icon">⚠️</span>
+    <span class="flash-text">{{ message }}</span>
+    <span class="flash-close" onclick="this.parentElement.classList.add('hide');">&times;</span>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<h2>Sign Up</h2>
+
+<!-- Step 2: Credentials Form -->
+<form method="POST" action="{{ url_for('user.signup_login_credentials') }}">
+    {{ form.hidden_tag() }}
+
+    <!-- Email Input -->
+    <div class="inputBox">
+        {{ form.email(class="authentication", placeholder=" ") }}
+        <span>Email</span>
     </div>
 
-    <!-- Main form section for Step 2 credentials input -->
-    <div class="login">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message {{ category }}">
-                        <span class="flash-icon">⚠️</span>
-                        <span class="flash-text">{{ message }}</span>
-                        <span class="flash-close" onclick="this.parentElement.classList.add('hide');">&times;</span>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+    <!-- Password Input -->
+    <div class="inputBox">
+        {{ form.password(class="authentication", placeholder=" ") }}
+        <span>Password</span>
+    </div>
 
-        <h2>Sign Up</h2>
+    <!-- Confirm Password Input -->
+    <div class="inputBox">
+        {{ form.confirm_password(class="authentication", placeholder=" ") }}
+        <span>Confirm Password</span>
+    </div>
 
-        <!-- Credentials Form -->
-        <form method="POST" action="{{ url_for('user.signup_login_credentials') }}">
-            {{ form.hidden_tag() }}
+    <!-- Submit Button -->
+    <div class="inputBox">
+        {{ form.submit(class="authentication", value="Sign Up") }}
+    </div>
+</form>
 
-            <!-- Email Input Field -->
-            <div class="inputBox">
-                {{ form.email(class="authentication", placeholder=" ") }}
-                <span>Email</span>
-            </div>
+<!-- Already have an account? -->
+<div class="group">
+    <a href="{{ url_for('user.login') }}">Already have an account? Login</a>
+</div>
 
-            <!-- Password Input Field -->
-            <div class="inputBox">
-                {{ form.password(class="authentication", placeholder=" ") }}
-                <span>Password</span>
-            </div>
+<!-- Divider -->
+<div class="or-divider"><span>OR</span></div>
 
-            <!-- Confirm Password Field -->
-            <div class="inputBox">
-                {{ form.confirm_password(class="authentication", placeholder=" ") }}
-                <span>Confirm Password</span>
-            </div>
+<!-- Spotify OAuth Button -->
+<button type="button" class="inputBox oauth-btn spotify-btn"
+    onclick="location.href='{{ url_for('spotify.oauth_spotify') }}'">
+    <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png"
+        alt="Spotify logo" class="btn-icon">
+    Connect with Spotify
+</button>
 
-            <!-- Submit Sign Up Button -->
-            <div class="inputBox">
-                {{ form.submit(class="authentication", value="Sign Up") }}
-            </div>
-        </form>
-
-        <!-- Links for password recovery and new user sign-up -->
-        <div class="group">
-            <a href="{{ url_for('user.login') }}">Already have an account? Login</a>
-        </div>
-        
-        <!-- Visual divider for alternate login methods -->
-        <div class="or-divider"><span>OR</span></div>
-        
-        <!-- Spotify OAuth login button with redirect using Flask route -->
-        <button type="button" class="inputBox oauth-btn spotify-btn" onclick="location.href='{{ url_for('spotify.oauth_spotify') }}'">
-            <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png"
-                        alt="Spotify logo" class="btn-icon">
-                    Connect with Spotify
-                </button>
-
-            </div>
-
-    <!-- JavaScript controlling background interactions -->
-    <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
-</body>
-
-</html>
+{% endblock %}

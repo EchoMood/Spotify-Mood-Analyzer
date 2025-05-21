@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <!-- Dynamic title block that can be overridden by child templates -->
+    <title>{% block title %}EchoMood{% endblock %}</title>
+
+    <!-- Responsive layout support for mobile and desktop -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Optional block for injecting custom meta tags like description, keywords, etc. -->
+    {% block meta %}{% endblock %}
+
+    <!-- Link to the main CSS file shared by all auth-related pages -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+
+<body>
+    <!-- Background Container -->
+    <!-- This div holds the animated mood-tile grid -->
+    <div class="container">
+        {% for _ in range(3) %}
+        <!-- Each .box represents a colored tile using a CSS variable.
+                 These are reused for various moods like happy, sad, angry, etc. -->
+        <div class="box" style="--clr: var(--happy-color);"></div>
+        <div class="box" style="--clr: var(--sad-color);"></div>
+        <div class="box" style="--clr: var(--excited-color);"></div>
+        <div class="box" style="--clr: var(--motivated-color);"></div>
+        <div class="box" style="--clr: var(--chill-color);"></div>
+        <div class="box" style="--clr: var(--angry-color);"></div>
+        {% endfor %}
+    </div>
+
+    <!-- Main content container -->
+    <!-- Child templates inject their forms and text into this section -->
+    <div class="login">
+        {% block content %}
+        <!-- Default fallback content, typically replaced by child templates -->
+        {% endblock %}
+    </div>
+
+    <!-- JavaScript file for background hover/animation effects -->
+    <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+</body>
+
+</html>

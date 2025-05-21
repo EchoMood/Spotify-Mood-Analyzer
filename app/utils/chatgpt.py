@@ -72,14 +72,16 @@ class ChatGPT:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-
-        # Send request to OpenAI API
-        response = requests.post(self.api_url, headers=headers, json=data)
-
-        # Check if request succeeded
-        if response.ok:
-            result = response.json()
-            return result["choices"][0]["message"]["content"].strip()
+        try:
+            # Send request to OpenAI API
+            response = requests.post(self.api_url, headers=headers, json=data)
+            if response.ok:
+                result = response.json()
+                return result["choices"][0]["message"]["content"].strip()
+            
+        except Exception as e:
+            print(f"[ERROR] OpenAI API request failed: {e}")
+            return "Unknown"
 
         # Raise error if something went wrong
         raise RuntimeError(f"OpenAI API error {response.status_code}: {response.text}")
@@ -118,14 +120,21 @@ class ChatGPT:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-
+        # Send request to OpenAI API
+        try:
+            response = requests.post(self.api_url, headers=headers, json=data)
+            if response.ok:
+                result = response.json()
+                return result["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            print(f"[ERROR] OpenAI API request failed: {e}")
+            return None
+        # Raise error if something went wrong
+        if not response.ok:
+            print(f"[ERROR] OpenAI API request failed: {response.status_code}, {response.text}")
+            raise RuntimeError(f"OpenAI API error {response.status_code}: {response.text}")
         response = requests.post(self.api_url, headers=headers, json=data)
 
-        if response.ok:
-            result = response.json()
-            return result["choices"][0]["message"]["content"].strip()
-
-        raise RuntimeError(f"OpenAI API error {response.status_code}: {response.text}")
     
     def classify_genre(self, track_name, artist, album):
         """
