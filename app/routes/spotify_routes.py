@@ -1,6 +1,6 @@
 # app/routes/spotify_routes.py
 
-from flask import Blueprint, request, session, redirect, url_for, flash, render_template, current_app
+from flask import Blueprint, request, session, redirect, url_for, flash, render_template, current_app, jsonify
 from datetime import datetime, timedelta
 import uuid
 
@@ -34,6 +34,13 @@ def oauth_spotify():
     auth_url = spotify_api.get_auth_url(state, scope)
     
     return redirect(auth_url)
+@spotify_bp.route('/ajax/spotify-logo')
+def ajax_spotify_logo():
+    # Return the Spotify logo URL as JSON
+    return jsonify({
+        'logo_url': 'https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png',
+        'timestamp': datetime.utcnow().isoformat()
+    })
 
 # ----------------------------------------------------------
 # Spotify OAuth Callback

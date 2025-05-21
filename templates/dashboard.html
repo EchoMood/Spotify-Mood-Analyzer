@@ -232,6 +232,40 @@
             font-weight: bold;
         }
 
+        /* Spotify logo container styles */
+        .spotify-logo-container {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+            min-height: 60px;
+            position: relative;
+        }
+
+        .spotify-logo {
+            max-width: 180px;
+            max-height: 60px;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #1DB954;
+            animation: spin 1s ease-in-out infinite;
+            position: absolute;
+            top: calc(50% - 15px);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .logo-loaded .loading-spinner {
+            display: none;
+        }
+
         /* Media queries */
         @media (max-width: 768px) {
             .friends-grid {
@@ -265,12 +299,20 @@
                 {% if not user.access_token %}
                     <div class="connect-spotify">
                         <h3>Connect Spotify</h3>
+                        <div class="spotify-logo-container">
+                            <!-- Logo will be loaded here via AJAX -->
+                            <div class="loading-spinner"></div>
+                        </div>
                         <p>To analyze your music mood and get personalized recommendations, connect your Spotify account.</p>
                         <a href="{{ url_for('spotify.oauth_spotify') }}" class="btn btn-primary">Connect Spotify</a>
                     </div>
                 {% else %}
                     <div class="spotify-connected">
                         <h3>Spotify Connected</h3>
+                        <div class="spotify-logo-container">
+                            <!-- Logo will be loaded here via AJAX -->
+                            <div class="loading-spinner"></div>
+                        </div>
                         <p>Your Spotify account is connected. View your mood analysis or explore your friends' music tastes.</p>
                         <a href="{{ url_for('visual.visualise') }}" class="btn btn-primary">View My Mood Analysis</a>
                     </div>
@@ -464,7 +506,46 @@
                     // For now, the form will submit normally with page reload
                 });
             }
+
+            // Load Spotify logo via AJAX
+            loadSpotifyLogo();
         });
+
+        // AJAX function to load the Spotify logo
+        function loadSpotifyLogo() {
+            // Create a new XMLHttpRequest object
+            const xhr = new XMLHttpRequest();
+
+            // Configure it to GET from the '/ajax/spotify-logo' endpoint
+            xhr.open('GET', "{{ url_for('spotify.ajax_spotify_logo') }}", true);
+
+            // Set up what happens when the request loads successfully
+            xhr.onload = function() {
+                if (this.status === 200) {
+                    // Parse the JSON response
+                    const response = JSON.parse(this.responseText);
+
+                    // Find all elements with the spotify-logo-container class
+                    const logoContainers = document.querySelectorAll('.spotify-logo-container');
+
+                    // Update each container with the logo HTML
+                    logoContainers.forEach(container => {
+                        container.innerHTML = `<img src="${response.logo_url}" alt="Spotify Logo" class="spotify-logo" />`;
+                        container.classList.add('logo-loaded');
+                    });
+
+                    console.log('Spotify logo loaded successfully via AJAX');
+                }
+            };
+
+            // Set up what happens on error
+            xhr.onerror = function() {
+                console.error('Request error while loading Spotify logo');
+            };
+
+            // Send the request
+            xhr.send();
+        }
     </script>
 </body>
 </html>
